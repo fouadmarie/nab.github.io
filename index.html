@@ -1,57 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mini Royale</title>
+    <title>Multiplayer Royale</title>
     <style>
+        body { font-family: sans-serif; text-align: center; background: #333; color: white; }
         #game-board {
-            width: 300px;
+            width: 320px;
             height: 500px;
-            background: #7cfc00; /* Grass color */
+            background: #7cfc00;
             position: relative;
-            border: 5px solid #555;
-            margin: 0 auto;
+            border: 5px solid #fff;
+            margin: 20px auto;
             overflow: hidden;
+            border-radius: 10px;
         }
         .unit {
             width: 30px;
             height: 30px;
             position: absolute;
             border-radius: 50%;
+            transition: bottom 0.5s linear; /* Smooth movement */
         }
-        .player-unit { background: blue; }
-        .enemy-unit { background: red; }
-        
-        .controls { text-align: center; margin-top: 10px; }
+        .my-unit { background: blue; border: 2px solid white; }
+        .enemy-unit { background: red; border: 2px solid black; }
+        #status { margin-bottom: 10px; color: yellow; }
     </style>
 </head>
 <body>
 
-    <div id="game-board">
-        </div>
+    <h1>Mini Royale Multiplayer</h1>
+    <div id="status">Waiting for connection...</div>
+    
+    <div id="game-board"></div>
 
-    <div class="controls">
-        <button onclick="spawnUnit('player')">Spawn Blue Knight</button>
-    </div>
+    <button onclick="spawnUnit()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+        Spawn Troop
+    </button>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // --- 1. CONFIGURATION ---
+        // REPLACE THIS OBJECT WITH YOUR OWN FROM FIREBASE CONSOLE
+        const firebaseConfig = {
+            apiKey: "AIzaSy...",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456...",
+            appId: "1:12345..."
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        // This ID identifies THIS browser window
+        const myPlayerId = 'player_' + Math.random().toString(36).substr(2, 9);
+        const movesRef = ref(db, 'moves');
+
         const board = document.getElementById('game-board');
+        const statusDiv = document.getElementById('status');
+        statusDiv.innerText = "Connected as: " + myPlayerId;
 
-        function spawnUnit(type) {
+        // --- 2. SENDING MOVES ---
+        // Expose function to global scope so the HTML button can use it
+        window.spawnUnit = function() {
+            // Push data to the database
+            push(movesRef, {
+                playerId: myPlayerId,
+                x: 145, // Middle of board
+                timestamp: Date.now()
+            });
+        };
+
+        // --- 3. RECEIVING MOVES ---
+        // Listen for ANY new move added to the database
+        onChildAdded(movesRef, (snapshot) => {
+            const move = snapshot.val();
+            
+            // If the move is older than 5 seconds, ignore it (cleanup)
+            if (Date.now() - move.timestamp > 5000) return;
+
+            createUnitOnScreen(move);
+        });
+
+        function createUnitOnScreen(move) {
             const unit = document.createElement('div');
-            unit.className = `unit ${type}-unit`;
-            unit.style.left = '135px'; // Middle
-            unit.style.bottom = '10px';
+            const isMine = move.playerId === myPlayerId;
+            
+            unit.className = `unit ${isMine ? 'my-unit' : 'enemy-unit'}`;
+            unit.style.left = move.x + 'px';
+            
+            // If it's mine, start at bottom. If enemy, start at top.
+            let bottomPos = isMine ? 10 : 460;
+            unit.style.bottom = bottomPos + 'px';
+            
             board.appendChild(unit);
 
-            // Basic AI: Move upward
-            let position = 10;
-            const moveInterval = setInterval(() => {
-                position += 2;
-                unit.style.bottom = position + 'px';
+            // Animate
+            const interval = setInterval(() => {
+                // My units go UP (+), Enemies go DOWN (-)
+                bottomPos += isMine ? 2 : -2; 
+                unit.style.bottom = bottomPos + 'px';
 
-                if (position > 470) {
-                    clearInterval(moveInterval);
-                    unit.remove(); // Reached the end
+                // Remove if off screen
+                if (bottomPos > 500 || bottomPos < -30) {
+                    clearInterval(interval);
+                    unit.remove();
                 }
             }, 50);
         }
