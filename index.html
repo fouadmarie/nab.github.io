@@ -1,33 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web</title>
+    <title>Clash Web Pro</title>
     <style>
-        body { font-family: sans-serif; background: #222; color: white; text-align: center; margin: 0; }
-        #lobby { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #game-ui { display: none; }
-        #arena { width: 320px; height: 500px; background: #5D9634; margin: 10px auto; position: relative; border: 4px solid #fff; border-radius: 10px; overflow: hidden; }
-        .tower { position: absolute; width: 40px; height: 40px; border: 2px solid #000; }
-        .unit { width: 25px; height: 25px; position: absolute; border-radius: 50%; }
-        .dashboard { background: #333; padding: 10px; position: fixed; bottom: 0; width: 100%; display: flex; justify-content: center; gap: 10px; }
-        .card-btn { padding: 10px; cursor: pointer; background: #555; color: white; border: 2px solid #fff; border-radius: 5px; }
+        body { font-family: sans-serif; background: #222; color: white; text-align: center; margin: 0; overflow: hidden; }
+        #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #game-ui { display: none; touch-action: none; }
+        #arena { width: 320px; height: 450px; background: #5D9634; margin: 10px auto; position: relative; border: 4px solid #fff; }
+        .tower { position: absolute; width: 40px; height: 40px; background: #444; color: white; font-size: 10px; font-weight: bold; border: 2px solid #000; }
+        .unit { width: 30px; height: 30px; position: absolute; border-radius: 50%; pointer-events: none; z-index: 10; }
+        .card { width: 60px; height: 70px; background: #555; border: 2px solid #fff; cursor: grab; font-size: 12px; }
+        #elixir-container { width: 300px; height: 20px; background: #000; margin: 5px auto; border-radius: 10px; border: 2px solid white; }
+        #elixir-fill { height: 100%; background: #d0f; width: 50%; transition: width 0.3s; border-radius: 8px; }
+        .controls { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #333; }
     </style>
 </head>
 <body>
-    <div id="lobby">
+
+    <div id="setup">
         <h1>CLASH WEB</h1>
-        <button style="padding: 20px 40px; font-size: 20px; background: gold; border-radius: 10px;" onclick="findMatch()">BATTLE</button>
-        <p id="status">Click to find an opponent</p>
+        <input type="text" id="nameInput" placeholder="Enter Name" style="padding: 10px; margin-bottom: 10px;">
+        <button onclick="findMatch()" style="padding: 15px 30px; background: gold; font-weight: bold; cursor: pointer;">BATTLE</button>
+        <p id="status">Type name and click Battle</p>
     </div>
 
     <div id="game-ui">
-        <div id="arena">
-            <div class="tower" style="top: 10px; left: 140px; background: red;"></div>
-            <div class="tower" style="bottom: 10px; left: 140px; background: blue;"></div>
+        <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div id="eTower" class="tower" style="top: 10px; left: 140px; background: red;">HP: 100</div>
+            <div id="myTower" class="tower" style="bottom: 10px; left: 140px; background: blue;">HP: 100</div>
         </div>
-        <div class="dashboard">
-            <button class="card-btn" onclick="playCard('knight')">Knight</button>
-            <button class="card-btn" onclick="playCard('giant')">Giant</button>
+
+        <div id="elixir-container"><div id="elixir-fill"></div></div>
+
+        <div class="controls">
+            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">Knight (3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">Giant (5)</div>
         </div>
     </div>
 
@@ -47,10 +54,33 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const myId = "p" + Math.floor(Math.random() * 9999);
+        let myId = "";
         let gameId = null;
+        let elixir = 5;
+        let enemyHP = 100;
+        let myHP = 100;
 
-        window.findMatch = async function() {
+        window.allowDrop = (ev) => ev.preventDefault();
+        window.drag = (ev, type, cost) => {
+            ev.dataTransfer.setData("type", type);
+            ev.dataTransfer.setData("cost", cost);
+        };
+
+        window.drop = (ev) => {
+            ev.preventDefault();
+            const type = ev.dataTransfer.getData("type");
+            const cost = parseInt(ev.dataTransfer.getData("cost"));
+            const rect = ev.target.getBoundingClientRect();
+            const x = ev.clientX - rect.left;
+
+            if (elixir >= cost) {
+                elixir -= cost;
+                push(ref(db, `games/${gameId}/moves`), { type, x, owner: myId });
+            }
+        };
+
+        window.findMatch = async () => {
+            myId = document.getElementById('nameInput').value || "Player";
             document.getElementById('status').innerText = "Searching...";
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
@@ -59,37 +89,59 @@
                 const enemy = Object.keys(snap.val())[0];
                 gameId = enemy + "_" + myId;
                 await remove(ref(db, 'queue/' + enemy));
-                await set(ref(db, 'games/' + gameId), { p1: enemy, p2: myId });
+                await set(ref(db, 'games/' + gameId), { p1: enemy, p2: myId, hp1: 100, hp2: 100 });
                 start();
             } else {
                 set(ref(db, 'queue/' + myId), true);
                 onValue(ref(db, 'games'), (s) => {
-                    const gs = s.val();
-                    for(let id in gs) { if(id.startsWith(myId)) { gameId = id; start(); } }
+                    for(let id in s.val()) { if(id.startsWith(myId)) { gameId = id; start(); } }
                 });
             }
         };
 
         function start() {
-            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
+            
+            setInterval(() => { if(elixir < 10) { elixir += 0.5; updateUI(); } }, 2000);
+
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => {
                 const m = s.val();
-                spawn(m.owner === myId);
+                spawn(m.type, m.x, m.owner === myId);
             });
         }
 
-        window.playCard = (type) => push(ref(db, `games/${gameId}/moves`), { type, owner: myId });
+        function updateUI() {
+            document.getElementById('elixir-fill').style.width = (elixir * 10) + '%';
+            document.getElementById('eTower').innerText = "HP: " + Math.floor(enemyHP);
+            document.getElementById('myTower').innerText = "HP: " + Math.floor(myHP);
+        }
 
-        function spawn(isMine) {
+        function spawn(type, x, isMine) {
             const u = document.createElement('div');
             u.className = 'unit';
             u.style.backgroundColor = isMine ? 'blue' : 'red';
-            u.style.left = '150px';
-            let pos = isMine ? 440 : 40;
+            u.style.left = x + 'px';
+            let pos = isMine ? 400 : 50;
             u.style.top = pos + 'px';
             document.getElementById('arena').appendChild(u);
-            setInterval(() => { pos += isMine ? -2 : 2; u.style.top = pos + 'px'; }, 50);
+
+            const timer = setInterval(() => {
+                pos += isMine ? -3 : 3;
+                u.style.top = pos + 'px';
+                
+                // Damage Logic
+                if (isMine && pos < 50) { 
+                    enemyHP -= (type === 'giant' ? 10 : 5); 
+                    clearInterval(timer); u.remove(); updateUI();
+                    if(enemyHP <= 0) alert("YOU WIN!");
+                }
+                if (!isMine && pos > 400) { 
+                    myHP -= 5; 
+                    clearInterval(timer); u.remove(); updateUI();
+                    if(myHP <= 0) alert("YOU LOSE!");
+                }
+            }, 50);
         }
     </script>
 </body>
