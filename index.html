@@ -1,75 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web: Fazbear Custom</title>
+    <title>Clash Web Pro - Fazbear Edition</title>
     <style>
-        body { font-family: 'Arial Black', sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
-        #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#444, #111); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
+        #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #333, #111); }
         #game-ui { display: none; }
         
-        /* THE ARENA BOARD */
+        /* ARENA WITH IMAGE SUPPORT */
         #arena { 
-            width: 350px; height: 550px; 
-            margin: 5px auto; position: relative; 
-            border: 6px solid #3e2723; border-radius: 15px; 
-            overflow: hidden;
-            background-color: #4e7d34; /* Fallback green */
-            background-size: cover;
-            background-position: center;
+            width: 320px; height: 480px; 
+            background: #4e7d34; /* Fallback */
+            background-size: cover; background-position: center;
+            margin: 10px auto; position: relative; border: 4px solid #fff; border-radius: 10px; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); overflow: hidden;
         }
 
-        /* Deployment Line */
-        #arena::before {
-            content: ""; position: absolute; top: 275px; width: 100%; height: 2px;
-            background: rgba(255,255,255,0.5); z-index: 3; pointer-events: none;
-        }
-
-        .tower { position: absolute; width: 52px; height: 52px; border: 2px solid #000; border-radius: 8px; z-index: 5; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; text-shadow: 1px 1px #000; }
-        .king { width: 68px; height: 68px; font-size: 14px; }
+        .tower { position: absolute; width: 60px; height: 60px; border: 3px solid #000; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; z-index: 5; background-size: cover; }
+        .name-label { position: absolute; width: 120px; top: -25px; left: -30px; font-weight: bold; color: #ffeb3b; text-shadow: 2px 2px #000; pointer-events: none; }
         
-        /* UNIT STYLE */
-        .unit { width: 45px; height: 45px; position: absolute; z-index: 10; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+        /* UNITS */
+        .unit { width: 35px; height: 35px; position: absolute; z-index: 10; font-size: 10px; font-weight: bold; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
         .unit img { width: 100%; height: 100%; object-fit: contain; }
-        .hp-bar { width: 35px; height: 5px; background: #333; border: 1px solid white; margin-bottom: 2px; }
-        .hp-fill { height: 100%; background: #2ecc71; width: 100%; }
-        
-        #ui-bar { width: 350px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; }
-        #elixir-container { width: 180px; height: 18px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
-        #elixir-fill { height: 100%; background: #d0f; width: 0%; transition: width 0.3s linear; }
-        #elixir-num { position: absolute; width: 100%; text-align: center; top: 0; font-size: 12px; font-weight: bold; }
-        
-        .hand { display: flex; justify-content: center; gap: 5px; padding: 10px; background: #111; }
-        .card { width: 75px; height: 95px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; font-size: 10px; }
+        .hp-bar { width: 100%; height: 4px; background: red; border: 1px solid #000; margin-bottom: 2px; }
+        .hp-fill { height: 100%; background: #2ecc71; }
+
+        #ui-bar { width: 320px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 10px 10px 0 0; }
+        #elixir-container { width: 160px; height: 16px; background: #444; border: 2px solid #fff; border-radius: 8px; overflow: hidden; position: relative; }
+        #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.2s linear; }
+        #timer { font-weight: bold; color: #f1c40f; }
+
+        .hand { display: flex; justify-content: center; gap: 8px; padding: 10px; background: #222; border-top: 2px solid #444; overflow-x: auto; }
+        .card { width: 70px; height: 80px; background: #34495e; border: 2px solid #ecf0f1; cursor: grab; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; font-size: 11px; flex-shrink: 0; }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <h1 style="color: #f1c40f;">FAZBEAR ROYALE</h1>
-        <input type="text" id="nameInput" placeholder="NICKNAME" style="padding: 15px; width: 200px; border-radius: 5px; border: none;">
-        <button onclick="findMatch()" id="startBtn" style="padding: 15px 40px; margin-top: 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px;">BATTLE</button>
+        <h1 style="color: #f1c40f; margin: 0;">FAZBEAR WEB</h1>
+        <p style="opacity: 0.6;">Slower Speeds & 2x Elixir</p>
+        <input type="text" id="nameInput" placeholder="Nickname" style="padding: 12px; margin: 10px; border-radius: 5px; border: none;">
+        <button onclick="findMatch()" id="btn-text" style="padding: 12px 40px; background: #27ae60; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">BATTLE</button>
         <p id="status">Ready...</p>
     </div>
 
     <div id="game-ui">
         <div id="ui-bar">
-            <div id="timer" style="color: gold; font-size: 18px;">01:00</div>
-            <div id="elixir-container"><div id="elixir-fill"></div><div id="elixir-num">5</div></div>
-            <b style="color:#d0f;">ELIXIR</b>
+            <div id="timer">01:00</div>
+            <div id="elixir-container"><div id="elixir-fill"></div></div>
+            <div id="elixir-text" style="color:#d0f; font-weight: bold;">5</div>
         </div>
+
         <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div id="eKing" class="tower king" style="top: 5px; left: 141px; background: #c0392b;">4000</div>
-            <div id="eL" class="tower" style="top: 70px; left: 45px; background: #c0392b;">2500</div>
-            <div id="eR" class="tower" style="top: 70px; left: 253px; background: #c0392b;">2500</div>
-            <div id="mKing" class="tower king" style="bottom: 5px; left: 141px; background: #2980b9;">4000</div>
-            <div id="mL" class="tower" style="bottom: 70px; left: 45px; background: #2980b9;">2500</div>
-            <div id="mR" class="tower" style="bottom: 70px; left: 253px; background: #2980b9;">2500</div>
+            <div id="eTower" class="tower" style="top: 15px; left: 130px; background: #c0392b;">
+                <span id="enemyNameDisplay" class="name-label">Enemy</span>
+                <span id="eHP" style="font-weight: bold;">2500</span>
+            </div>
+            <div id="myTower" class="tower" style="bottom: 15px; left: 130px; background: #2980b9;">
+                <span id="myNameDisplay" class="name-label">Me</span>
+                <span id="myHP" style="font-weight: bold;">2500</span>
+            </div>
         </div>
+
         <div class="hand">
-            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">⚔️<br>Knight (3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">👹<br>Giant (5)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'freddy', 4)">🐻<br>Freddy (4)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'fazbear', 7)">👻<br>Afghan (7)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">⚔️ Knight (3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">👹 Giant (5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'freddy', 4)">🐻 Freddy (4)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'fazbear', 7)">👻 Afghan (7)</div>
         </div>
     </div>
 
@@ -77,9 +74,15 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, update, push, onValue, onChildAdded, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-        // --- 1. ADD YOUR ARENA IMAGE HERE ---
-        const arenaImage = "https://i.imgur.com/example-arena.png"; 
-        document.getElementById('arena').style.backgroundImage = `url('${arenaImage}')`;
+        // --- 🖼️ CUSTOM IMAGES SECTION ---
+        const IMAGES = {
+            arena: "https://jumugame.com/games/images/20240122/clash_royale_1705893500064.jpg", // PASTE ARENA LINK HERE
+            knight: "https://i.pinimg.com/736x/a4/2a/29/a42a299d7171cb390b641e64ace276a7--the-knight-knight-male.jpg",
+            giant: "https://fbi.cults3d.com/uploaders/27563105/photo-file/25ca450f-bff1-4b1a-8076-80990f444b7f/5ce79cdb3fd4adcbabc365f6f4e726ec_display_large.jpg",
+            freddy: "https://img00.deviantart.net/5a1a/i/2017/209/f/a/freddy_fazbear_head_4k_by_popi01234-dbhyna0.png",
+            fazbear: "https://pics.craiyon.com/2023-10-18/dd5d6b2bad0a46628f86c366b4b6d08e.webp"
+        };
+        if(IMAGES.arena) document.getElementById('arena').style.backgroundImage = `url('${IMAGES.arena}')`;
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJGeR1gfk3l_0g4Fjeyu2RzhUdP94U1yM",
@@ -90,9 +93,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let myName = "", gameId = null, elixir = 5, gameActive = false, elixirMult = 1;
-        let timeLeft = 60, units = [];
-        let towerHP = { eKing: 4000, eL: 2500, eR: 2500, mKing: 4000, mL: 2500, mR: 2500 };
+        let myName = "", enemyName = "", gameId = null, elixir = 5, eHP = 2500, mHP = 2500;
+        let units = [], gameActive = false, elixirMult = 1, timeLeft = 60;
 
         window.allowDrop = (e) => e.preventDefault();
         window.drag = (e, type, cost) => { e.dataTransfer.setData("type", type); e.dataTransfer.setData("cost", cost); };
@@ -102,52 +104,86 @@
             const type = e.dataTransfer.getData("type"), cost = parseInt(e.dataTransfer.getData("cost"));
             const rect = document.getElementById('arena').getBoundingClientRect();
             const x = e.clientX - rect.left, y = e.clientY - rect.top;
-            if (elixir >= cost && gameActive && y > 275) {
+            if (elixir >= cost && gameActive && y > 240) {
                 elixir -= cost;
-                push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Date.now() + Math.random() });
+                push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Math.random() });
             }
         };
 
         window.findMatch = async () => {
-            myName = document.getElementById('nameInput').value.trim() || "P" + Math.floor(Math.random()*99);
+            myName = document.getElementById('nameInput').value.trim() || "P" + Math.floor(Math.random()*999);
+            document.getElementById('status').innerText = "Searching...";
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
-            if (snap.exists() && Object.keys(snap.val())[0] !== myName) {
-                gameId = Object.values(snap.val())[0].name + "_vs_" + myName;
+
+            if (snap.exists() && Object.values(snap.val())[0].name !== myName) {
+                enemyName = Object.values(snap.val())[0].name;
+                gameId = enemyName + "_vs_" + myName;
                 await remove(qRef);
-                await set(ref(db, `games/${gameId}`), { p1: Object.values(snap.val())[0].name, p2: myName, start: true });
+                await set(ref(db, `games/${gameId}`), { p1: enemyName, p2: myName, start: true });
                 start();
             } else {
                 set(ref(db, 'queue/' + myName), { name: myName });
-                onValue(ref(db, 'games'), (s) => { if (!gameId) for (let id in s.val()) if (id.includes(myName) && s.val()[id].start) { gameId = id; start(); } });
+                onValue(ref(db, 'games'), (s) => { 
+                    if (!gameId) for (let id in s.val()) if (id.includes(myName) && s.val()[id].start) { gameId = id; start(); }
+                });
             }
         };
 
+        function start() {
+            gameActive = true;
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            document.getElementById('myNameDisplay').innerText = myName;
+
+            onValue(ref(db, `games/${gameId}`), (s) => {
+                if(!s.exists()) return;
+                enemyName = (s.val().p1 === myName) ? s.val().p2 : s.val().p1;
+                document.getElementById('enemyNameDisplay').innerText = enemyName;
+            });
+
+            // 2x Elixir Timer
+            setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    document.getElementById('timer').innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
+                } else {
+                    elixirMult = 2;
+                    document.getElementById('timer').innerText = "2X!";
+                }
+            }, 1000);
+
+            setInterval(() => { if (elixir < 10 && gameActive) elixir = Math.min(10, elixir + (0.08 * elixirMult)); updateUI(); }, 400);
+            onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateUI() {
+            document.getElementById('elixir-fill').style.width = (elixir * 10) + '%';
+            document.getElementById('elixir-text').innerText = Math.floor(elixir);
+            document.getElementById('eHP').innerText = Math.floor(eHP);
+            document.getElementById('myHP').innerText = Math.floor(mHP);
+        }
+
         function spawn(m) {
             const isMine = m.sender === myName;
-            
-            // --- 2. ADD YOUR UNIT IMAGES HERE ---
-            const sprites = {
-                knight: "https://tse1.explicit.bing.net/th/id/OIP.Td90ehzTW7xX9wx9hDDXKAAAAA?rs=1&pid=ImgDetMain&o=7&rm=3",
-                giant: "https://fbi.cults3d.com/uploaders/27563105/photo-file/25ca450f-bff1-4b1a-8076-80990f444b7f/5ce79cdb3fd4adcbabc365f6f4e726ec_display_large.jpg",
-                freddy: "https://static.wikia.nocookie.net/freddy-fazbears-pizza/images/b/b5/Freddy_Fazbear_Render.png/revision/latest?cb=20251105172837",
-                fazbear: "https://static.wikia.nocookie.net/afghanistan-fazbear/images/e/e6/Site-logo.png/revision/latest?cb=20250104121249"
-            };
-
             const stats = {
-                knight: { hp: 180, dmg: 1.5, speed: 0.8 },
+                knight: { hp: 180, dmg: 1.5, speed: 0.7 },
                 giant: { hp: 450, dmg: 2.0, speed: 0.4 },
                 freddy: { hp: 500, dmg: 10, speed: 0.35 },
-                fazbear: { hp: 1, dmg: 10000, speed: 4.0 }
+                fazbear: { hp: 1, dmg: 10000, speed: 4.5 }
             }[m.type];
 
             const u = {
-                id: m.id, type: m.type, x: isMine ? m.x : 350 - m.x, y: isMine ? m.y : 550 - m.y,
-                hp: stats.hp, max: stats.hp, dmg: stats.dmg, speed: stats.speed,
+                id: m.id, type: m.type, x: isMine ? m.x : 320 - m.x, y: isMine ? m.y : 480 - m.y,
+                hp: stats.hp, maxHp: stats.hp, dmg: stats.dmg, speed: stats.speed,
                 team: isMine ? 'blue' : 'red', el: document.createElement('div')
             };
             u.el.className = 'unit';
-            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="h-${u.id}"></div></div><img src="${sprites[m.type]}" onerror="this.style.display='none'">`;
+            u.el.innerHTML = `
+                <div class="hp-bar"><div class="hp-fill" id="hp-${u.id}"></div></div>
+                <img src="${IMAGES[m.type]}" onerror="this.outerHTML='<b>${m.type}</b>'">
+            `;
             document.getElementById('arena').appendChild(u.el);
             units.push(u);
         }
@@ -155,9 +191,8 @@
         function gameLoop() {
             if (!gameActive) return;
             units.forEach((u, idx) => {
-                let target = null, minDist = 999;
-                
-                // Units first
+                let target = null, minDist = 1000;
+
                 units.forEach(enemy => {
                     if (enemy.team !== u.team) {
                         let d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
@@ -165,65 +200,37 @@
                     }
                 });
 
-                // Towers if Fazbear or no units
+                // Tower Targeting
                 if (minDist > 80 || u.type === 'fazbear') {
-                    const tList = u.team === 'blue' ? ['eL', 'eR', 'eKing'] : ['mL', 'mR', 'mKing'];
-                    tList.forEach(tId => {
-                        if (towerHP[tId] > 0) {
-                            const tEl = document.getElementById(tId);
-                            let d = Math.hypot(tEl.offsetLeft+26-u.x, tEl.offsetTop+26-u.y);
-                            if (d < minDist) { minDist = d; target = {x: tEl.offsetLeft+26, y: tEl.offsetTop+26, isT: true, id: tId}; }
-                        }
-                    });
+                    let tx = 160, ty = (u.team === 'blue' ? 45 : 435);
+                    let d = Math.hypot(tx - u.x, ty - u.y);
+                    if (d < minDist) { minDist = d; target = {x: tx, y: ty, isTower: true}; }
                 }
 
-                if (minDist < (u.type === 'fazbear' ? 50 : 30)) {
-                    if (target.isT) towerHP[target.id] -= u.dmg;
-                    else { target.hp -= u.dmg; document.getElementById(`h-${target.id}`).style.width = (target.hp/target.max*100)+'%'; }
-                    if (u.type === 'fazbear') u.hp = 0;
+                if (minDist < (u.type === 'fazbear' ? 45 : 30)) {
+                    if (target.isTower) {
+                        if (u.team === 'blue') eHP -= u.dmg; else mHP -= u.dmg;
+                        if (u.type === 'fazbear') u.hp = 0;
+                    } else {
+                        target.hp -= u.dmg;
+                        document.getElementById(`hp-${target.id}`).style.width = (target.hp / target.maxHp * 100) + '%';
+                        if (u.type === 'fazbear') u.hp = 0;
+                    }
                 } else if (target) {
                     let angle = Math.atan2(target.y - u.y, target.x - u.x);
                     u.x += Math.cos(angle) * u.speed;
                     u.y += Math.sin(angle) * u.speed;
                 }
 
-                // Tower Arrows
-                const eTowers = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
-                eTowers.forEach(tId => {
-                    if (towerHP[tId] > 0) {
-                        const tEl = document.getElementById(tId);
-                        if (Math.hypot(tEl.offsetLeft+26-u.x, tEl.offsetTop+26-u.y) < 120) {
-                            u.hp -= (u.max * 0.008);
-                            const h = document.getElementById(`h-${u.id}`);
-                            if(h) h.style.width = (u.hp/u.max*100)+'%';
-                        }
-                    }
-                });
-
-                u.el.style.left = (u.x - 22) + 'px'; u.el.style.top = (u.y - 22) + 'px';
+                u.el.style.left = (u.x - 17) + 'px'; u.el.style.top = (u.y - 17) + 'px';
                 if (u.hp <= 0) { u.el.remove(); units.splice(idx, 1); }
             });
 
-            if (towerHP.eKing <= 0 || towerHP.mKing <= 0) { gameActive = false; alert("GAME OVER"); location.reload(); }
-            else { requestAnimationFrame(gameLoop); }
-        }
-
-        function start() {
-            gameActive = true;
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-            onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
-            onValue(ref(db, `games/${gameId}/abandoned`), () => location.reload());
-            setInterval(() => { if (elixir < 10) elixir = Math.min(10, elixir + (0.07 * elixirMult)); updateUI(); }, 400);
-            setInterval(() => { if (timeLeft > 0) timeLeft--; else elixirMult = 2; }, 1000);
-            requestAnimationFrame(gameLoop);
-        }
-
-        function updateUI() {
-            document.getElementById('elixir-fill').style.width = (elixir * 10) + '%';
-            document.getElementById('elixir-num').innerText = Math.floor(elixir);
-            document.getElementById('timer').innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
-            for (let id in towerHP) { const el = document.getElementById(id); if (el) el.innerText = Math.max(0, Math.floor(towerHP[id])); }
+            if (eHP <= 0 || mHP <= 0) {
+                gameActive = false; alert(eHP <= 0 ? "VICTORY!" : "DEFEAT!"); location.reload();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
         }
     </script>
 </body>
