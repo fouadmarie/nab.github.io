@@ -1,48 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web Elite - Auto Win</title>
+    <title>Clash Web Pro - Stable</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; }
-        #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #game-ui { display: none; touch-action: none; }
-        #arena { width: 320px; height: 480px; background: #4e7d34; margin: 5px auto; position: relative; border: 4px solid #fff; border-radius: 8px; }
-        .tower { position: absolute; width: 50px; height: 50px; border: 2px solid #000; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px; border-radius: 5px; z-index: 5; }
-        .name-label { position: absolute; width: 100%; top: -18px; font-weight: bold; color: yellow; text-shadow: 1px 1px #000; }
-        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 9px; font-weight: bold; line-height: 26px; }
-        #ui-layer { width: 320px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 5px; }
-        #elixir-bar { width: 200px; height: 15px; background: #333; border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
-        #elixir-fill { height: 100%; background: #d0f; width: 0%; transition: width 0.3s; }
-        #elixir-num { font-size: 20px; color: #d0f; font-weight: bold; }
-        .hand { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #222; }
-        .card { width: 70px; height: 50px; background: #444; border: 2px solid white; cursor: grab; line-height: 50px; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
+        #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #333, #111); }
+        #game-ui { display: none; }
+        #arena { width: 320px; height: 480px; background: #4e7d34; margin: 10px auto; position: relative; border: 4px solid #fff; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .tower { position: absolute; width: 60px; height: 60px; border: 3px solid #000; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; z-index: 5; transition: transform 0.1s; }
+        .name-label { position: absolute; width: 120px; top: -25px; left: -30px; font-weight: bold; color: #ffeb3b; text-shadow: 2px 2px #000; pointer-events: none; }
+        .unit { width: 28px; height: 28px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 10px; font-weight: bold; line-height: 28px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); pointer-events: none; }
+        .hp-bar { position: absolute; top: -5px; left: 0; width: 100%; height: 4px; background: red; }
+        .hp-fill { height: 100%; background: #2ecc71; }
+        #ui-bar { width: 320px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; border-radius: 10px 10px 0 0; }
+        #elixir-container { width: 180px; height: 16px; background: #444; border: 2px solid #fff; border-radius: 8px; overflow: hidden; position: relative; }
+        #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.2s linear; }
+        #elixir-text { position: absolute; width: 100%; text-align: center; font-size: 12px; font-weight: bold; top: -1px; }
+        .hand { display: flex; justify-content: center; gap: 15px; padding: 15px; background: #222; border-top: 2px solid #444; }
+        .card { width: 80px; height: 60px; background: #34495e; border: 2px solid #ecf0f1; cursor: grab; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; font-weight: bold; }
+        .card:active { cursor: grabbing; transform: scale(0.95); }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <h1>CLASH WEB AI</h1>
-        <input type="text" id="nameInput" placeholder="Your Name" style="padding: 10px; font-size: 18px;">
+        <h1 style="font-size: 40px; color: #f1c40f; margin-bottom: 5px;">CLASH WEB</h1>
+        <p style="margin-bottom: 20px; opacity: 0.8;">Multiplayer Battle Engine</p>
+        <input type="text" id="nameInput" placeholder="Enter Nickname" maxlength="12" style="padding: 12px; font-size: 18px; border-radius: 5px; border: none; outline: none; width: 200px;">
         <br>
-        <button onclick="findMatch()" style="padding: 15px 40px; background: #fcc200; font-weight: bold; border: none; cursor: pointer; border-radius: 5px;">BATTLE</button>
-        <p id="status">Enter name and start</p>
+        <button onclick="findMatch()" id="btn-text" style="padding: 15px 50px; background: #27ae60; color: white; font-weight: bold; border: none; cursor: pointer; border-radius: 5px; font-size: 20px; transition: 0.2s;">BATTLE</button>
+        <p id="status" style="margin-top: 15px;">Ready to Play</p>
     </div>
 
     <div id="game-ui">
-        <div id="ui-layer">
-            <div id="elixir-num">5</div>
-            <div id="elixir-bar"><div id="elixir-fill"></div></div>
-            <div style="font-weight:bold">ELIXIR</div>
+        <div id="ui-bar">
+            <div id="elixir-text" style="color:#9b59b6; font-size: 24px;">5</div>
+            <div id="elixir-container">
+                <div id="elixir-fill"></div>
+            </div>
+            <div style="font-size: 12px; font-weight: bold;">ELIXIR</div>
         </div>
 
         <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div id="eTower" class="tower" style="top: 10px; left: 135px; background: #d33;"><span id="enemyNameDisplay" class="name-label">Enemy</span><span id="eHP">100</span></div>
-            <div id="myTower" class="tower" style="bottom: 10px; left: 135px; background: #33d;"><span id="myNameDisplay" class="name-label">Me</span><span id="myHP">100</span></div>
+            <div id="eTower" class="tower" style="top: 15px; left: 130px; background: #c0392b;">
+                <span id="enemyNameDisplay" class="name-label">Enemy</span>
+                <span id="eHP" style="font-size: 18px; font-weight: bold;">100</span>
+            </div>
+            <div id="myTower" class="tower" style="bottom: 15px; left: 130px; background: #2980b9;">
+                <span id="myNameDisplay" class="name-label">Me</span>
+                <span id="myHP" style="font-size: 18px; font-weight: bold;">100</span>
+            </div>
         </div>
 
         <div class="hand">
-            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">Knight(3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">Giant(5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">Knight <span>(3)</span></div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">Giant <span>(5)</span></div>
         </div>
     </div>
 
@@ -50,7 +62,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, update, push, onValue, onChildAdded, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-        // CONFIG (Already updated with your keys)
         const firebaseConfig = {
             apiKey: "AIzaSyAJGeR1gfk3l_0g4Fjeyu2RzhUdP94U1yM",
             authDomain: "clash-royale-3bd59.firebaseapp.com",
@@ -64,17 +75,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let myName = "", enemyName = "", gameId = null, elixir = 5, eHP = 100, mHP = 100;
-        let units = [];
-        let gameActive = false;
+        let units = [], gameActive = false;
 
-        window.allowDrop = (ev) => ev.preventDefault();
-        window.drag = (ev, type, cost) => { ev.dataTransfer.setData("type", type); ev.dataTransfer.setData("cost", cost); };
+        window.allowDrop = (e) => e.preventDefault();
+        window.drag = (e, type, cost) => { e.dataTransfer.setData("type", type); e.dataTransfer.setData("cost", cost); };
         
-        window.drop = (ev) => {
-            ev.preventDefault();
-            const type = ev.dataTransfer.getData("type"), cost = parseInt(ev.dataTransfer.getData("cost"));
+        window.drop = (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData("type"), cost = parseInt(e.dataTransfer.getData("cost"));
             const rect = document.getElementById('arena').getBoundingClientRect();
-            const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+            const x = e.clientX - rect.left, y = e.clientY - rect.top;
             if (elixir >= cost && gameId && gameActive && y > 240) {
                 elixir -= cost;
                 push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Math.random() });
@@ -82,29 +92,35 @@
         };
 
         window.findMatch = async () => {
-            myName = document.getElementById('nameInput').value || "Player_" + Math.floor(Math.random()*100);
+            const input = document.getElementById('nameInput');
+            myName = input.value.trim() || "Player" + Math.floor(Math.random()*1000);
+            input.disabled = true;
+            document.getElementById('status').innerText = "Searching for opponent...";
+            document.getElementById('btn-text').style.display = 'none';
+
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
 
             if (snap.exists()) {
                 const enemy = Object.values(snap.val())[0];
+                if (enemy.name === myName) { location.reload(); return; } // Prevent matching self
                 gameId = enemy.name + "_vs_" + myName;
                 await remove(qRef);
                 await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, abandoned: false });
-                setupDisconnect();
+                onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
                 start();
             } else {
                 set(ref(db, 'queue/' + myName), { name: myName });
+                onDisconnect(ref(db, 'queue/' + myName)).remove();
                 onValue(ref(db, 'games'), (s) => { 
-                    if (!gameId) for (let id in s.val()) if (id.includes(myName)) { gameId = id; setupDisconnect(); start(); } 
+                    if (!gameId) for (let id in s.val()) if (id.includes(myName)) { 
+                        gameId = id; 
+                        onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
+                        start(); 
+                    } 
                 });
             }
         };
-
-        function setupDisconnect() {
-            // If I leave, mark the game as abandoned by me
-            onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
-        }
 
         function start() {
             gameActive = true;
@@ -115,32 +131,24 @@
             onValue(ref(db, `games/${gameId}`), (s) => { 
                 if (!s.exists()) return;
                 const data = s.val();
-                
-                // DISCONNECT WIN LOGIC
-                if (data.abandoned && data.abandoned !== false) {
+                if (data.abandoned) {
                     gameActive = false;
-                    if (data.abandoned === myName) {
-                        alert("You left the game and lost!");
-                    } else {
-                        alert("Opponent left! YOU WIN!");
-                    }
+                    alert(data.abandoned === myName ? "You disconnected!" : "Opponent left! YOU WIN!");
                     remove(ref(db, `games/${gameId}`));
                     location.reload();
-                    return;
                 }
-
                 enemyName = (data.p1 === myName) ? data.p2 : data.p1;
                 document.getElementById('enemyNameDisplay').innerText = enemyName;
             });
 
-            setInterval(() => { if (elixir < 10 && gameActive) elixir = Math.min(10, elixir + 0.1); updateUI(); }, 200);
+            setInterval(() => { if (elixir < 10 && gameActive) elixir = Math.min(10, elixir + 0.15); updateUI(); }, 200);
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
-            gameLoop();
+            requestAnimationFrame(gameLoop);
         }
 
         function updateUI() {
             document.getElementById('elixir-fill').style.width = (elixir * 10) + '%';
-            document.getElementById('elixir-num').innerText = Math.floor(elixir);
+            document.getElementById('elixir-text').innerText = Math.floor(elixir);
             document.getElementById('eHP').innerText = Math.floor(eHP);
             document.getElementById('myHP').innerText = Math.floor(mHP);
         }
@@ -148,19 +156,19 @@
         function spawn(m) {
             const isMine = m.sender === myName;
             const u = {
-                id: m.id, type: m.type, x: m.x, y: isMine ? m.y : 480 - m.y,
-                hp: m.type === 'giant' ? 100 : 40, team: isMine ? 'blue' : 'red',
-                el: document.createElement('div')
+                id: m.id, type: m.type, x: isMine ? m.x : 320 - m.x, y: isMine ? m.y : 480 - m.y,
+                hp: m.type === 'giant' ? 120 : 50, maxHp: m.type === 'giant' ? 120 : 50,
+                team: isMine ? 'blue' : 'red', el: document.createElement('div')
             };
-            u.el.className = 'unit'; u.el.style.backgroundColor = isMine ? '#33d' : '#d33';
+            u.el.className = 'unit'; u.el.style.backgroundColor = isMine ? '#2980b9' : '#c0392b';
+            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="hp-${u.id}"></div></div>`;
             document.getElementById('arena').appendChild(u.el);
             units.push(u);
         }
 
         function gameLoop() {
             if (!gameActive) return;
-
-            units.forEach((u, index) => {
+            units.forEach((u, idx) => {
                 let target = null, minDist = 1000;
                 units.forEach(enemy => {
                     if (enemy.team !== u.team) {
@@ -169,29 +177,35 @@
                     }
                 });
 
-                if (minDist < 30) {
-                    target.hp -= 0.5;
+                if (minDist < 35) {
+                    u.isFighting = true;
+                    target.hp -= 0.4;
+                    document.getElementById(`hp-${target.id}`).style.width = (target.hp / target.maxHp * 100) + '%';
                 } else {
+                    u.isFighting = false;
                     let tx = target ? target.x : 160;
-                    let ty = target ? target.y : (u.team === 'blue' ? 35 : 445);
+                    let ty = target ? target.y : (u.team === 'blue' ? 45 : 435);
                     let angle = Math.atan2(ty - u.y, tx - u.x);
-                    u.x += Math.cos(angle) * (u.type === 'giant' ? 1 : 2);
-                    u.y += Math.sin(angle) * (u.type === 'giant' ? 1 : 2);
+                    u.x += Math.cos(angle) * (u.type === 'giant' ? 0.8 : 1.6);
+                    u.y += Math.sin(angle) * (u.type === 'giant' ? 0.8 : 1.6);
                 }
 
-                if (u.team === 'blue' && u.y < 50) eHP -= 0.2;
-                if (u.team === 'red' && u.y > 430) mHP -= 0.2;
+                if (u.team === 'blue' && u.y < 70 && !u.isFighting) eHP -= 0.15;
+                if (u.team === 'red' && u.y > 410 && !u.isFighting) mHP -= 0.15;
 
-                u.el.style.left = (u.x - 13) + 'px'; u.el.style.top = (u.y - 13) + 'px';
-                u.el.innerText = Math.floor(u.hp);
+                u.el.style.left = (u.x - 14) + 'px'; u.el.style.top = (u.y - 14) + 'px';
 
-                if (u.hp <= 0) { u.el.remove(); units.splice(index, 1); }
+                if (u.hp <= 0) { u.el.remove(); units.splice(idx, 1); }
             });
 
-            if(eHP <= 0) { alert("VICTORY!"); gameActive = false; location.reload(); }
-            if(mHP <= 0) { alert("DEFEAT!"); gameActive = false; location.reload(); }
-            
-            if(gameActive) requestAnimationFrame(gameLoop);
+            if (eHP <= 0 || mHP <= 0) {
+                gameActive = false;
+                alert(eHP <= 0 ? "👑 VICTORY!" : "DEFEAT!");
+                remove(ref(db, `games/${gameId}`));
+                location.reload();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
         }
     </script>
 </body>
