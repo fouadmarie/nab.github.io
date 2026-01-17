@@ -1,117 +1,303 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Multiplayer Royale</title>
+    <title>Clash Clone Multiplayer</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #333; color: white; }
-        #game-board {
-            width: 320px;
-            height: 500px;
-            background: #7cfc00;
-            position: relative;
-            border: 5px solid #fff;
-            margin: 20px auto;
-            overflow: hidden;
-            border-radius: 10px;
+        body { font-family: 'Segoe UI', sans-serif; background: #222; color: white; margin: 0; overflow: hidden; }
+        
+        /* MATCHMAKING SCREEN */
+        #lobby-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
         }
+        #find-match-btn {
+            padding: 20px 50px; font-size: 24px; background: #fcc200; border: none;
+            border-bottom: 5px solid #c99b00; cursor: pointer; font-weight: bold; color: #333;
+            border-radius: 10px; transition: transform 0.1s;
+        }
+        #find-match-btn:active { transform: translateY(4px); border-bottom: 0; }
+
+        /* GAME BOARD */
+        #game-ui { display: none; /* Hidden until match found */ }
+        
+        #arena {
+            width: 340px; height: 550px; background: #5D9634; /* Grass */
+            position: relative; margin: 10px auto; border: 4px solid #333;
+            border-radius: 12px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* BRIDGE & RIVER */
+        .river { width: 100%; height: 40px; background: #48C; position: absolute; top: 255px; }
+        .bridge { width: 60px; height: 44px; background: #754c24; position: absolute; top: 253px; z-index: 1; }
+        .bridge-left { left: 60px; } .bridge-right { right: 60px; }
+
+        /* TOWERS */
+        .tower {
+            width: 40px; height: 40px; position: absolute; z-index: 2;
+            display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 10px;
+            border: 2px solid black;
+        }
+        .blue-tower { background: #66F; color: white; }
+        .red-tower { background: #F66; color: black; }
+
+        /* UNITS */
         .unit {
-            width: 30px;
-            height: 30px;
-            position: absolute;
-            border-radius: 50%;
-            transition: bottom 0.5s linear; /* Smooth movement */
+            width: 30px; height: 30px; position: absolute; z-index: 10;
+            border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center;
+            transition: bottom 0.2s linear, left 0.2s linear; /* Network smoothing */
         }
-        .my-unit { background: blue; border: 2px solid white; }
-        .enemy-unit { background: red; border: 2px solid black; }
-        #status { margin-bottom: 10px; color: yellow; }
+        
+        /* DASHBOARD */
+        .dashboard {
+            position: absolute; bottom: 0; width: 100%; height: 140px;
+            background: #333; display: flex; flex-direction: column; align-items: center;
+        }
+        #elixir-bar { width: 300px; height: 15px; background: #111; margin: 5px; border-radius: 5px; overflow: hidden; }
+        #elixir-fill { height: 100%; background: #D0F; width: 50%; transition: width 0.2s; }
+        #cards-container { display: flex; gap: 10px; margin-top: 5px; }
+        
+        .card {
+            width: 60px; height: 80px; background: #555; border: 2px solid #888;
+            border-radius: 6px; cursor: pointer; text-align: center; font-size: 11px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .card:hover { border-color: white; background: #666; }
+        .cost-badge { color: #D0F; font-weight: bold; font-size: 14px; }
+
     </style>
 </head>
 <body>
 
-    <h1>Mini Royale Multiplayer</h1>
-    <div id="status">Waiting for connection...</div>
-    
-    <div id="game-board"></div>
+    <div id="lobby-screen">
+        <h1 style="color:white; margin-bottom: 20px;">CLASH WEB</h1>
+        <div id="status-text" style="color: #ccc; margin-bottom: 20px;">Ready to battle?</div>
+        <button id="find-match-btn" onclick="findMatch()">BATTLE</button>
+    </div>
 
-    <button onclick="spawnUnit()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-        Spawn Troop
-    </button>
+    <div id="game-ui">
+        <div id="arena">
+            <div class="river"></div>
+            <div class="bridge bridge-left"></div>
+            <div class="bridge bridge-right"></div>
+
+            <div class="tower red-tower" style="top:20px; left:50px;">HP</div>
+            <div class="tower red-tower" style="top:20px; right:50px;">HP</div>
+            <div class="tower red-tower" style="top:10px; left:150px;">KING</div>
+
+            <div class="tower blue-tower" style="bottom:20px; left:50px;">HP</div>
+            <div class="tower blue-tower" style="bottom:20px; right:50px;">HP</div>
+            <div class="tower blue-tower" style="bottom:10px; left:150px;">KING</div>
+        </div>
+
+        <div class="dashboard">
+            <div style="color: #D0F; font-weight:bold;">ELIXIR: <span id="elixir-display">5</span></div>
+            <div id="elixir-bar"><div id="elixir-fill"></div></div>
+            
+            <div id="cards-container">
+                <div class="card" onclick="playCard('knight')">
+                    <strong>Knight</strong>
+                    <span class="cost-badge">3</span>
+                </div>
+                <div class="card" onclick="playCard('archer')">
+                    <strong>Archer</strong>
+                    <span class="cost-badge">3</span>
+                </div>
+                <div class="card" onclick="playCard('giant')">
+                    <strong>Giant</strong>
+                    <span class="cost-badge">5</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, push, remove, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-        // --- 1. CONFIGURATION ---
-        // REPLACE THIS OBJECT WITH YOUR OWN FROM FIREBASE CONSOLE
+        // 1. PASTE YOUR CONFIG HERE
         const firebaseConfig = {
-            apiKey: "AIzaSy...",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456...",
-            appId: "1:12345..."
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_BUCKET.appspot.com",
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
-        // This ID identifies THIS browser window
-        const myPlayerId = 'player_' + Math.random().toString(36).substr(2, 9);
-        const movesRef = ref(db, 'moves');
 
-        const board = document.getElementById('game-board');
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Connected as: " + myPlayerId;
+        // GLOBALS
+        const myPlayerId = 'p_' + Math.random().toString(36).substr(2, 5);
+        let gameId = null;
+        let myElixir = 5;
+        let isPlayer1 = false; // Player 1 is "Blue" (Bottom), Player 2 is "Red" (Top)
 
-        // --- 2. SENDING MOVES ---
-        // Expose function to global scope so the HTML button can use it
-        window.spawnUnit = function() {
-            // Push data to the database
-            push(movesRef, {
-                playerId: myPlayerId,
-                x: 145, // Middle of board
-                timestamp: Date.now()
-            });
+        // TROOP DATA
+        const UNIT_STATS = {
+            knight: { cost: 3, hp: 1000, color: 'blue', speed: 2 },
+            archer: { cost: 3, hp: 400, color: 'green', speed: 3 },
+            giant:  { cost: 5, hp: 3000, color: 'orange', speed: 1 }
         };
 
-        // --- 3. RECEIVING MOVES ---
-        // Listen for ANY new move added to the database
-        onChildAdded(movesRef, (snapshot) => {
-            const move = snapshot.val();
-            
-            // If the move is older than 5 seconds, ignore it (cleanup)
-            if (Date.now() - move.timestamp > 5000) return;
+        // --- MATCHMAKING LOGIC ---
+        window.findMatch = async function() {
+            const btn = document.getElementById('find-match-btn');
+            const status = document.getElementById('status-text');
+            btn.disabled = true;
+            status.innerText = "Searching for opponent...";
 
-            createUnitOnScreen(move);
-        });
+            const queueRef = ref(db, 'matchmaking_queue');
+            
+            // Check if someone is waiting
+            const snapshot = await get(queueRef);
+            
+            if (snapshot.exists()) {
+                // SOMEONE IS WAITING! JOIN THEM.
+                const waitingPlayer = Object.keys(snapshot.val())[0];
+                
+                // Don't match with self if you clicked twice
+                if (waitingPlayer === myPlayerId) return; 
 
-        function createUnitOnScreen(move) {
-            const unit = document.createElement('div');
-            const isMine = move.playerId === myPlayerId;
-            
-            unit.className = `unit ${isMine ? 'my-unit' : 'enemy-unit'}`;
-            unit.style.left = move.x + 'px';
-            
-            // If it's mine, start at bottom. If enemy, start at top.
-            let bottomPos = isMine ? 10 : 460;
-            unit.style.bottom = bottomPos + 'px';
-            
-            board.appendChild(unit);
+                // Create a Game ID
+                gameId = waitingPlayer + '_' + myPlayerId;
+                
+                // Remove them from queue so no one else joins them
+                remove(ref(db, `matchmaking_queue/${waitingPlayer}`));
 
-            // Animate
+                // Tell both players to start game
+                set(ref(db, `games/${gameId}/status`), 'active');
+                
+                isPlayer1 = false; // I joined, so I am Player 2 (Top/Red)
+                startGame();
+
+            } else {
+                // NO ONE WAITING. I WILL WAIT.
+                set(ref(db, `matchmaking_queue/${myPlayerId}`), { timestamp: Date.now() });
+                status.innerText = "Waiting for challenger...";
+
+                // Listen for my specific Game ID creation (in case someone joins me)
+                const myGameListener = ref(db, 'games');
+                onValue(myGameListener, (snap) => {
+                    if(!snap.exists()) return;
+                    const games = snap.val();
+                    // Look for a game key that STARTS with my ID
+                    const foundKey = Object.keys(games).find(k => k.startsWith(myPlayerId));
+                    
+                    if (foundKey) {
+                        gameId = foundKey;
+                        isPlayer1 = true; // I created the wait, so I am Player 1 (Bottom/Blue)
+                        remove(ref(db, `matchmaking_queue/${myPlayerId}`)); // Clean up
+                        startGame();
+                    }
+                });
+            }
+        };
+
+        function startGame() {
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            
+            // Start Elixir Generation
+            setInterval(() => {
+                if(myElixir < 10) {
+                    myElixir += 0.5; // Slow refill
+                    updateElixirUI();
+                }
+            }, 1000);
+
+            // Listen for TROOPS
+            const gameMovesRef = ref(db, `games/${gameId}/moves`);
+            onValue(gameMovesRef, (snapshot) => {
+                if(snapshot.exists()) {
+                    // In a real game, you'd diff changes. 
+                    // For simplicity, we just grab the last one added.
+                    const moves = snapshot.val();
+                    const lastMoveKey = Object.keys(moves).pop();
+                    const lastMove = moves[lastMoveKey];
+                    
+                    // Prevent re-rendering old moves (basic check)
+                    const now = Date.now();
+                    if (now - lastMove.timestamp < 1000) {
+                        renderUnit(lastMove);
+                    }
+                }
+            });
+        }
+
+        // --- GAMEPLAY LOGIC ---
+
+        window.playCard = function(cardName) {
+            const stats = UNIT_STATS[cardName];
+            
+            if (myElixir >= stats.cost) {
+                myElixir -= stats.cost;
+                updateElixirUI();
+
+                // Send to Database
+                const gameMovesRef = ref(db, `games/${gameId}/moves`);
+                push(gameMovesRef, {
+                    type: cardName,
+                    owner: myPlayerId,
+                    timestamp: Date.now()
+                });
+            } else {
+                alert("Not enough Elixir!");
+            }
+        };
+
+        function updateElixirUI() {
+            document.getElementById('elixir-display').innerText = Math.floor(myElixir);
+            document.getElementById('elixir-fill').style.width = (myElixir * 10) + '%';
+        }
+
+        function renderUnit(moveData) {
+            // Check if unit already exists (simple unique ID would be better)
+            const unitId = `unit-${moveData.timestamp}`;
+            if (document.getElementById(unitId)) return;
+
+            const stats = UNIT_STATS[moveData.type];
+            const isMine = moveData.owner === myPlayerId;
+
+            const el = document.createElement('div');
+            el.id = unitId;
+            el.className = 'unit';
+            el.style.backgroundColor = isMine ? 'blue' : 'red'; // Simple team colors
+            el.innerText = moveData.type.substring(0,1).toUpperCase(); // "K", "A", "G"
+            
+            // Positioning
+            // If I am Player 1, my troops start bottom (10px). Enemy top (500px).
+            // BUT, if I am Player 2, everything is flipped for me visually? 
+            // To keep it simple: We simply render based on owner.
+            
+            // Visual Logic:
+            // If I spawned it -> Start Bottom, Move Up.
+            // If Enemy spawned it -> Start Top, Move Down.
+            
+            // NOTE: In a real game, you need to mirror coordinates. 
+            // For this demo, we assume "IsMine" means "Starts at Bottom".
+            
+            let bottomPos = isMine ? 50 : 450;
+            let leftPos = isMine ? 100 : 200; // Hardcoded lanes for demo
+
+            el.style.bottom = bottomPos + 'px';
+            el.style.left = leftPos + 'px';
+            
+            document.getElementById('arena').appendChild(el);
+
+            // Movement Logic
             const interval = setInterval(() => {
-                // My units go UP (+), Enemies go DOWN (-)
-                bottomPos += isMine ? 2 : -2; 
-                unit.style.bottom = bottomPos + 'px';
+                bottomPos += isMine ? stats.speed : -stats.speed;
+                el.style.bottom = bottomPos + 'px';
 
-                // Remove if off screen
-                if (bottomPos > 500 || bottomPos < -30) {
+                if(bottomPos > 550 || bottomPos < 0) {
                     clearInterval(interval);
-                    unit.remove();
+                    el.remove();
                 }
             }, 50);
         }
+
     </script>
 </body>
 </html>
