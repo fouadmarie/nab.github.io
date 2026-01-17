@@ -1,42 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web Multiplayer</title>
+    <title>Clash Web</title>
     <style>
         body { font-family: sans-serif; background: #222; color: white; text-align: center; margin: 0; }
         #lobby { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #game-ui { display: none; }
         #arena { width: 320px; height: 500px; background: #5D9634; margin: 10px auto; position: relative; border: 4px solid #fff; border-radius: 10px; overflow: hidden; }
         .tower { position: absolute; width: 40px; height: 40px; border: 2px solid #000; }
-        .unit { width: 25px; height: 25px; position: absolute; border-radius: 50%; transition: all 0.1s linear; }
+        .unit { width: 25px; height: 25px; position: absolute; border-radius: 50%; }
         .dashboard { background: #333; padding: 10px; position: fixed; bottom: 0; width: 100%; display: flex; justify-content: center; gap: 10px; }
         .card-btn { padding: 10px; cursor: pointer; background: #555; color: white; border: 2px solid #fff; border-radius: 5px; }
     </style>
 </head>
 <body>
-
     <div id="lobby">
         <h1>CLASH WEB</h1>
-        <button id="battle-btn" style="padding: 20px 40px; font-size: 20px; background: #fcc200; border: none; border-radius: 10px; cursor: pointer;" onclick="findMatch()">BATTLE</button>
+        <button style="padding: 20px 40px; font-size: 20px; background: gold; border-radius: 10px;" onclick="findMatch()">BATTLE</button>
         <p id="status">Click to find an opponent</p>
     </div>
 
     <div id="game-ui">
         <div id="arena">
-            <div class="tower" style="top: 10px; left: 140px; background: red;"></div> <div class="tower" style="bottom: 10px; left: 140px; background: blue;"></div> </div>
+            <div class="tower" style="top: 10px; left: 140px; background: red;"></div>
+            <div class="tower" style="bottom: 10px; left: 140px; background: blue;"></div>
+        </div>
         <div class="dashboard">
-            <button class="card-btn" onclick="playCard('knight')">Knight (3)</button>
-            <button class="card-btn" onclick="playCard('archer')">Archer (3)</button>
-            <button class="card-btn" onclick="playCard('giant')">Giant (5)</button>
+            <button class="card-btn" onclick="playCard('knight')">Knight</button>
+            <button class="card-btn" onclick="playCard('giant')">Giant</button>
         </div>
     </div>
 
     <script type="module">
-        // Import Firebase using the Script Tag method
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, onChildAdded, remove, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-        // Your specific config from your screenshots
         const firebaseConfig = {
             apiKey: "AIzaSyAJGeR1gfk3l_0g4Fjeyu2RzhUdP94U1yM",
             authDomain: "clash-royale-3bd59.firebaseapp.com",
@@ -50,66 +48,49 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const myId = "p" + Math.floor(Math.random() * 9999);
-        let currentGameId = null;
+        let gameId = null;
 
-        // 1. MATCHMAKING
         window.findMatch = async function() {
             document.getElementById('status').innerText = "Searching...";
-            const queueRef = ref(db, 'queue');
-            const snap = await get(queueRef);
+            const qRef = ref(db, 'queue');
+            const snap = await get(qRef);
 
             if (snap.exists()) {
-                const enemyId = Object.keys(snap.val())[0];
-                currentGameId = enemyId + "_" + myId;
-                await remove(ref(db, 'queue/' + enemyId));
-                await set(ref(db, `games/${currentGameId}`), { p1: enemyId, p2: myId, status: 'playing' });
-                startGame();
+                const enemy = Object.keys(snap.val())[0];
+                gameId = enemy + "_" + myId;
+                await remove(ref(db, 'queue/' + enemy));
+                await set(ref(db, 'games/' + gameId), { p1: enemy, p2: myId });
+                start();
             } else {
                 set(ref(db, 'queue/' + myId), true);
                 onValue(ref(db, 'games'), (s) => {
-                    const games = s.val();
-                    for(let id in games) { 
-                        if(id.startsWith(myId)) { 
-                            currentGameId = id; 
-                            startGame(); 
-                        } 
-                    }
+                    const gs = s.val();
+                    for(let id in gs) { if(id.startsWith(myId)) { gameId = id; start(); } }
                 });
             }
         };
 
-        function startGame() {
+        function start() {
             document.getElementById('lobby').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            
-            // Listen for troop spawns
-            onChildAdded(ref(db, `games/${currentGameId}/moves`), (snap) => {
-                const move = snap.val();
-                spawnUnitVisual(move.type, move.owner === myId);
+            onChildAdded(ref(db, `games/${gameId}/moves`), (s) => {
+                const m = s.val();
+                spawn(m.owner === myId);
             });
         }
 
-        // 2. PLAYING CARDS
-        window.playCard = function(type) {
-            if (!currentGameId) return;
-            push(ref(db, `games/${currentGameId}/moves`), {
-                type: type,
-                owner: myId,
-                timestamp: Date.now()
-            });
-        };
+        window.playCard = (type) => push(ref(db, `games/${gameId}/moves`), { type, owner: myId });
 
-        function spawnUnitVisual(type, isMine) {
-            const unit = document.createElement('div');
-            unit.className = 'unit';
-            unit.style.backgroundColor = isMine ? 'blue' : 'red';
-            unit.style.left = '150px';
+        function spawn(isMine) {
+            const u = document.createElement('div');
+            u.className = 'unit';
+            u.style.backgroundColor = isMine ? 'blue' : 'red';
+            u.style.left = '150px';
             let pos = isMine ? 440 : 40;
-            unit.style.top = pos + 'px';
-            document.getElementById('arena').appendChild(unit);
-
-            // Move unit towards enemy
-            const moveSpeed = type === 'giant' ? 1 : 2;
-            const timer = setInterval(() => {
-                pos += isMine ? -moveSpeed : moveSpeed;
-                unit.style.
+            u.style.top = pos + 'px';
+            document.getElementById('arena').appendChild(u);
+            setInterval(() => { pos += isMine ? -2 : 2; u.style.top = pos + 'px'; }, 50);
+        }
+    </script>
+</body>
+</html>
