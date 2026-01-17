@@ -1,43 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web - Fixed & Enhanced</title>
+    <title>Clash Web - Redone</title>
     <style>
         body { font-family: 'Arial Black', sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
         #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#444, #111); }
         #game-ui { display: none; }
         #arena { width: 350px; height: 520px; background: #4e7d34; margin: 5px auto; position: relative; border: 4px solid #fff; border-radius: 10px; overflow: hidden; }
-        .tower { position: absolute; width: 44px; height: 44px; border: 3px solid #000; border-radius: 8px; z-index: 5; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+        
+        .tower { position: absolute; width: 44px; height: 44px; border: 3px solid #000; border-radius: 8px; z-index: 5; font-size: 11px; display: flex; align-items: center; justify-content: center; color: white; text-shadow: 1px 1px black; }
         .king { width: 56px; height: 56px; }
-        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 10px; font-weight: bold; line-height: 26px; pointer-events: none; }
+        
+        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 10px; font-weight: bold; line-height: 26px; pointer-events: none; color: white; text-align: center; }
         .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 5px; background: #333; border: 1px solid white; }
         .hp-fill { height: 100%; background: #2ecc71; width: 100%; }
-        #ui-bar { width: 350px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #222; }
-        #player-names { font-size: 14px; margin-bottom: 5px; color: #f1c40f; }
+        
+        #ui-bar { width: 350px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #222; border-bottom: 2px solid #444; }
+        #name-display { font-size: 14px; margin-bottom: 5px; color: #f1c40f; letter-spacing: 1px; }
         .stats-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-        #elixir-container { width: 180px; height: 20px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
-        #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.3s linear; }
+        #elixir-container { width: 180px; height: 18px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
+        #elixir-fill { height: 100%; background: #9b59b6; width: 50%; transition: width 0.2s linear; }
         #timer { color: #f1c40f; font-size: 18px; font-weight: bold; }
-        .hand { display: flex; justify-content: center; gap: 8px; padding: 10px; background: #111; flex-wrap: wrap; }
-        .card { width: 75px; height: 55px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 11px; }
+        
+        .hand { display: flex; justify-content: center; gap: 5px; padding: 10px; background: #111; flex-wrap: wrap; }
+        .card { width: 64px; height: 55px; background: #2c3e50; border: 2px solid #bdc3c7; border-radius: 6px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 9px; transition: transform 0.1s; }
+        .card:hover { transform: scale(1.05); border-color: #f1c40f; }
+        .card:active { cursor: grabbing; }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <h1 style="color: #f1c40f;">CLASH WEB</h1>
-        <input type="text" id="nameInput" placeholder="NICKNAME" style="padding: 15px; width: 200px; border-radius: 5px; border: none;">
-        <button onclick="findMatch()" id="startBtn" style="padding: 15px 40px; margin-top: 20px; background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 5px;">BATTLE</button>
-        <p id="status">Ready...</p>
+        <h1 style="color: #f1c40f; text-shadow: 2px 2px #000;">CLASH WEB</h1>
+        <input type="text" id="nameInput" placeholder="ENTER NICKNAME" style="padding: 15px; width: 220px; border-radius: 5px; border: none; font-weight: bold; text-align: center;">
+        <button onclick="findMatch()" id="startBtn" style="padding: 15px 50px; margin-top: 20px; background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 5px; box-shadow: 0 4px #1e8449;">BATTLE</button>
+        <p id="status">Ready to Fight...</p>
     </div>
 
     <div id="game-ui">
         <div id="ui-bar">
-            <div id="player-names"><span id="p1Display"></span> vs <span id="p2Display"></span></div>
+            <div id="name-display"><span id="p1N"></span> <b style="color:white">vs</b> <span id="p2N"></span></div>
             <div class="stats-row">
                 <div id="timer">01:00</div>
                 <div id="elixir-container"><div id="elixir-fill"></div></div>
-                <b id="elixir-num" style="color:#d0f;">5</b>
+                <b id="elixir-num" style="color:#d0f; font-size: 20px;">5</b>
             </div>
         </div>
         <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
@@ -49,10 +55,11 @@
             <div id="mR" class="tower" style="bottom: 75px; left: 260px; background: #2980b9;">2500</div>
         </div>
         <div class="hand">
-            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">KNIGHT(3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">GIANT(5)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'archers', 3)">ARCHERS(3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'barbs', 5)">BARBS(5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">KNIGHT (3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">GIANT (5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'archers', 3)">ARCHERS (3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'musketeer', 4)">MUSKET (4)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'skeles', 1)">SKELES (1)</div>
         </div>
     </div>
 
@@ -74,7 +81,10 @@
         let towers = { eKing: 4000, eL: 2500, eR: 2500, mKing: 4000, mL: 2500, mR: 2500 };
 
         window.allowDrop = (e) => e.preventDefault();
-        window.drag = (e, type, cost) => { e.dataTransfer.setData("type", type); e.dataTransfer.setData("cost", cost); };
+        window.drag = (e, type, cost) => { 
+            e.dataTransfer.setData("type", type); 
+            e.dataTransfer.setData("cost", cost); 
+        };
         
         window.drop = (e) => {
             e.preventDefault();
@@ -82,16 +92,18 @@
             const rect = document.getElementById('arena').getBoundingClientRect();
             const x = e.clientX - rect.left, y = e.clientY - rect.top;
             
-            // Fixed elixir check to allow placement at exactly 10
-            if (elixir >= (cost - 0.1) && gameActive && y > 260) {
+            // Fix: cost - 0.1 allows placement at exactly 10 elixir
+            if (gameActive && elixir >= (cost - 0.1) && y > 260) {
                 elixir -= cost;
-                push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Date.now() + Math.random() });
+                push(ref(db, `games/${gameId}/moves`), { 
+                    type, x, y, sender: myName, id: Date.now() + Math.random() 
+                });
             }
         };
 
         window.findMatch = async () => {
-            myName = document.getElementById('nameInput').value.trim() || "P" + Math.floor(Math.random()*99);
-            document.getElementById('status').innerText = "SEARCHING...";
+            myName = document.getElementById('nameInput').value.trim() || "User" + Math.floor(Math.random()*999);
+            document.getElementById('status').innerText = "SEARCHING FOR OPPONENT...";
             document.getElementById('startBtn').style.display = "none";
 
             const qRef = ref(db, 'queue');
@@ -101,19 +113,21 @@
                 const enemy = Object.values(snap.val())[0];
                 gameId = enemy.name + "_vs_" + myName;
                 await remove(qRef);
-                // Resetting moves for a fresh game
-                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, start: true, moves: null });
+                // Fix: Initialize game and clear old moves data
+                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, start: true, moves: {} });
                 onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
                 start();
             } else {
                 set(ref(db, 'queue/' + myName), { name: myName });
                 onDisconnect(ref(db, 'queue/' + myName)).remove();
                 onValue(ref(db, 'games'), (s) => { 
-                    if (!gameId) for (let id in s.val()) {
-                        if (id.includes(myName) && s.val()[id].start) {
-                            gameId = id; 
-                            onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
-                            start(); 
+                    if (!gameId) {
+                        for (let id in s.val()) {
+                            if (id.includes(myName) && s.val()[id].start) {
+                                gameId = id; 
+                                onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
+                                start(); 
+                            }
                         }
                     }
                 });
@@ -125,20 +139,21 @@
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             
-            // Set Names
-            const names = gameId.split("_vs_");
-            document.getElementById('p1Display').innerText = names[0];
-            document.getElementById('p2Display').innerText = names[1];
+            // Set Player Names
+            const n = gameId.split("_vs_");
+            document.getElementById('p1N').innerText = n[0];
+            document.getElementById('p2N').innerText = n[1];
 
             onValue(ref(db, `games/${gameId}/abandoned`), (s) => { if(s.exists()) location.reload(); });
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
 
-            // Faster Elixir Regen (0.22)
+            // Elixir Regen Logic
             setInterval(() => {
                 if (elixir < 10) elixir = Math.min(10, elixir + (0.22 * elixirMult));
                 updateUI();
             }, 500);
 
+            // Timer Logic
             setInterval(() => {
                 if (timeLeft > 0) {
                     timeLeft--;
@@ -147,6 +162,7 @@
                 } else if (elixirMult === 1) {
                     elixirMult = 2;
                     document.getElementById('timer').innerText = "2X ELIXIR!";
+                    document.getElementById('timer').style.color = "#d0f";
                 }
             }, 1000);
             requestAnimationFrame(gameLoop);
@@ -157,17 +173,21 @@
             document.getElementById('elixir-num').innerText = Math.floor(elixir);
             for (let id in towers) { 
                 const el = document.getElementById(id);
-                if (el) { el.innerText = Math.max(0, Math.floor(towers[id])); if(towers[id] <= 0) el.style.opacity = "0.2"; }
+                if (el) { 
+                    el.innerText = Math.max(0, Math.floor(towers[id])); 
+                    if(towers[id] <= 0) el.style.opacity = "0.2"; 
+                }
             }
         }
 
         function spawn(m) {
             const isMine = m.sender === myName;
             const stats = {
-                giant: { hp: 500, speed: 0.35, label: 'G' },
-                knight: { hp: 200, speed: 0.55, label: 'K' },
-                archers: { hp: 90, speed: 0.7, label: 'A' },
-                barbs: { hp: 160, speed: 0.45, label: 'B' }
+                giant: { hp: 550, speed: 0.3, char: 'G' },
+                knight: { hp: 220, speed: 0.5, char: 'K' },
+                archers: { hp: 80, speed: 0.6, char: 'A' },
+                musketeer: { hp: 140, speed: 0.5, char: 'M' },
+                skeles: { hp: 30, speed: 0.7, char: 'S' }
             }[m.type];
 
             const u = {
@@ -177,7 +197,7 @@
             };
             u.el.className = 'unit';
             u.el.style.backgroundColor = isMine ? '#2980b9' : '#c0392b';
-            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="h-${u.id}"></div></div>${stats.label}`;
+            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="h-${u.id}"></div></div>${stats.char}`;
             document.getElementById('arena').appendChild(u.el);
             units.push(u);
         }
@@ -186,6 +206,8 @@
             if (!gameActive) return;
             units.forEach((u, idx) => {
                 let target = null, minDist = 999;
+                
+                // Seek closest enemy troop
                 units.forEach(enemy => {
                     if (enemy.team !== u.team) {
                         let d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
@@ -193,7 +215,8 @@
                     }
                 });
 
-                if (minDist > 80) {
+                // Seek towers if no troops nearby
+                if (minDist > 85) {
                     const tList = u.team === 'blue' ? ['eL', 'eR', 'eKing'] : ['mL', 'mR', 'mKing'];
                     tList.forEach(tId => {
                         if (towers[tId] > 0) {
@@ -204,27 +227,34 @@
                     });
                 }
 
-                if (minDist < 35) {
-                    if (target.isT) towers[target.id] -= 1.8; 
-                    else { target.hp -= 1.5; let h = document.getElementById(`h-${target.id}`); if(h) h.style.width = (target.hp/target.max*100)+'%'; }
-                } else if (target) {
+                if (minDist < 35) { // Attack range
+                    if (target.isT) towers[target.id] -= 1.6; 
+                    else { 
+                        target.hp -= 1.4; 
+                        let h = document.getElementById(`h-${target.id}`); 
+                        if(h) h.style.width = (target.hp/target.max*100)+'%'; 
+                    }
+                } else if (target) { // Movement
                     let angle = Math.atan2(target.y - u.y, target.x - u.x);
                     u.x += Math.cos(angle) * u.speed;
                     u.y += Math.sin(angle) * u.speed;
                 }
 
-                const enemySide = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
-                enemySide.forEach(tId => {
+                // Passive Tower Defense (Towers shoot nearby troops)
+                const enemyTowers = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
+                enemyTowers.forEach(tId => {
                     if (towers[tId] > 0) {
                         const tEl = document.getElementById(tId);
                         if (Math.hypot(tEl.offsetLeft + 22 - u.x, tEl.offsetTop + 22 - u.y) < 110) {
-                            u.hp -= 0.6;
+                            u.hp -= 0.55;
                             const h = document.getElementById(`h-${u.id}`);
                             if(h) h.style.width = (u.hp/u.max*100)+'%';
                         }
                     }
                 });
-                u.el.style.left = (u.x - 13) + 'px'; u.el.style.top = (u.y - 13) + 'px';
+
+                u.el.style.left = (u.x - 13) + 'px'; 
+                u.el.style.top = (u.y - 13) + 'px';
                 if (u.hp <= 0) { u.el.remove(); units.splice(idx, 1); }
             });
 
