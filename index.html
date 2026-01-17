@@ -7,22 +7,17 @@
         #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#444, #111); }
         #game-ui { display: none; }
         #arena { width: 350px; height: 520px; background: #4e7d34; margin: 5px auto; position: relative; border: 4px solid #fff; border-radius: 10px; overflow: hidden; }
-        
-        /* Towers */
         .tower { position: absolute; width: 44px; height: 44px; border: 3px solid #000; border-radius: 8px; z-index: 5; font-size: 11px; display: flex; align-items: center; justify-content: center; }
         .king { width: 56px; height: 56px; }
-        
-        /* Units */
         .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 9px; font-weight: bold; line-height: 26px; pointer-events: none; }
         .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 5px; background: #333; border: 1px solid white; }
         .hp-fill { height: 100%; background: #2ecc71; width: 100%; }
-        
-        /* UI */
-        #ui-bar { width: 350px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #222; }
+        #ui-bar { width: 350px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #222; }
+        #player-display { font-size: 14px; margin-bottom: 5px; color: #f1c40f; }
+        .stats-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
         #elixir-container { width: 180px; height: 20px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
         #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.3s linear; }
         #timer { color: #f1c40f; font-size: 18px; font-weight: bold; }
-        
         .hand { display: flex; justify-content: center; gap: 10px; padding: 15px; background: #111; }
         .card { width: 85px; height: 65px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 12px; }
     </style>
@@ -38,15 +33,17 @@
 
     <div id="game-ui">
         <div id="ui-bar">
-            <div id="timer">01:00</div>
-            <div id="elixir-container"><div id="elixir-fill"></div></div>
-            <b id="elixir-num" style="color:#d0f;">5</b>
+            <div id="player-display"><span id="p1Name">...</span> VS <span id="p2Name">...</span></div>
+            <div class="stats-row">
+                <div id="timer">01:00</div>
+                <div id="elixir-container"><div id="elixir-fill"></div></div>
+                <b id="elixir-num" style="color:#d0f;">5</b>
+            </div>
         </div>
         <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
             <div id="eKing" class="tower king" style="top: 10px; left: 147px; background: #c0392b;">4000</div>
             <div id="eL" class="tower" style="top: 75px; left: 45px; background: #c0392b;">2500</div>
             <div id="eR" class="tower" style="top: 75px; left: 260px; background: #c0392b;">2500</div>
-
             <div id="mKing" class="tower king" style="bottom: 10px; left: 147px; background: #2980b9;">4000</div>
             <div id="mL" class="tower" style="bottom: 75px; left: 45px; background: #2980b9;">2500</div>
             <div id="mR" class="tower" style="bottom: 75px; left: 260px; background: #2980b9;">2500</div>
@@ -77,7 +74,6 @@
 
         window.allowDrop = (e) => e.preventDefault();
         window.drag = (e, type, cost) => { e.dataTransfer.setData("type", type); e.dataTransfer.setData("cost", cost); };
-        
         window.drop = (e) => {
             e.preventDefault();
             const type = e.dataTransfer.getData("type"), cost = parseInt(e.dataTransfer.getData("cost"));
@@ -93,10 +89,8 @@
             myName = document.getElementById('nameInput').value.trim() || "P" + Math.floor(Math.random()*99);
             document.getElementById('status').innerText = "SEARCHING...";
             document.getElementById('startBtn').style.display = "none";
-
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
-
             if (snap.exists() && Object.keys(snap.val())[0] !== myName) {
                 const enemy = Object.values(snap.val())[0];
                 gameId = enemy.name + "_vs_" + myName;
@@ -124,12 +118,17 @@
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             
+            // Set Player Names Display
+            const names = gameId.split("_vs_");
+            document.getElementById('p1Name').innerText = names[0];
+            document.getElementById('p2Name').innerText = names[1];
+
             onValue(ref(db, `games/${gameId}/abandoned`), (s) => { if(s.exists()) location.reload(); });
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
 
-            // Timers
+            // Elixir Timer - FASTER REGEN (0.25)
             setInterval(() => {
-                if (elixir < 10) elixir = Math.min(10, elixir + (0.12 * elixirMult));
+                if (elixir < 10) elixir = Math.min(10, elixir + (0.25 * elixirMult));
                 updateUI();
             }, 500);
 
@@ -144,7 +143,6 @@
                     document.getElementById('timer').style.color = "#d0f";
                 }
             }, 1000);
-
             requestAnimationFrame(gameLoop);
         }
 
@@ -164,7 +162,8 @@
                 hp: m.type === 'giant' ? 450 : 160, max: m.type === 'giant' ? 450 : 160,
                 team: isMine ? 'blue' : 'red', el: document.createElement('div')
             };
-            u.el.className = 'unit'; u.el.style.backgroundColor = isMine ? '#2980b9' : '#c0392b';
+            u.el.className = 'unit';
+            u.el.style.backgroundColor = isMine ? '#2980b9' : '#c0392b';
             u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="h-${u.id}"></div></div>`;
             document.getElementById('arena').appendChild(u.el);
             units.push(u);
@@ -174,7 +173,6 @@
             if (!gameActive) return;
             units.forEach((u, idx) => {
                 let target = null, minDist = 999;
-                
                 units.forEach(enemy => {
                     if (enemy.team !== u.team) {
                         let d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
@@ -198,11 +196,11 @@
                     else { target.hp -= 1.2; document.getElementById(`h-${target.id}`).style.width = (target.hp/target.max*100)+'%'; }
                 } else if (target) {
                     let angle = Math.atan2(target.y - u.y, target.x - u.x);
-                    u.x += Math.cos(angle) * (u.type === 'giant' ? 0.6 : 1.1);
-                    u.y += Math.sin(angle) * (u.type === 'giant' ? 0.6 : 1.1);
+                    // SLOWER MOVEMENT (Giant: 0.3, Knight: 0.5)
+                    u.x += Math.cos(angle) * (u.type === 'giant' ? 0.3 : 0.5);
+                    u.y += Math.sin(angle) * (u.type === 'giant' ? 0.3 : 0.5);
                 }
 
-                // Tower Range Damage
                 const enemySide = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
                 enemySide.forEach(tId => {
                     if (towers[tId] > 0) {
@@ -214,16 +212,13 @@
                         }
                     }
                 });
-
                 u.el.style.left = (u.x - 13) + 'px'; u.el.style.top = (u.y - 13) + 'px';
                 if (u.hp <= 0) { u.el.remove(); units.splice(idx, 1); }
             });
-
             if (towers.eKing <= 0 || towers.mKing <= 0) {
-                gameActive = false; alert(towers.eKing <= 0 ? "VICTORY!" : "DEFEAT!"); location.reload();
-            } else {
-                requestAnimationFrame(gameLoop);
-            }
+                gameActive = false;
+                alert(towers.eKing <= 0 ? "VICTORY!" : "DEFEAT!"); location.reload();
+            } else { requestAnimationFrame(gameLoop); }
         }
     </script>
 </body>
