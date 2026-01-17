@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web - Fixed Edition</title>
+    <title>Clash Web - Fixed & Enhanced</title>
     <style>
         body { font-family: 'Arial Black', sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
         #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#444, #111); }
@@ -9,17 +9,17 @@
         #arena { width: 350px; height: 520px; background: #4e7d34; margin: 5px auto; position: relative; border: 4px solid #fff; border-radius: 10px; overflow: hidden; }
         .tower { position: absolute; width: 44px; height: 44px; border: 3px solid #000; border-radius: 8px; z-index: 5; font-size: 11px; display: flex; align-items: center; justify-content: center; }
         .king { width: 56px; height: 56px; }
-        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 9px; font-weight: bold; line-height: 26px; pointer-events: none; text-transform: uppercase; }
+        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 10px; font-weight: bold; line-height: 26px; pointer-events: none; }
         .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 5px; background: #333; border: 1px solid white; }
         .hp-fill { height: 100%; background: #2ecc71; width: 100%; }
         #ui-bar { width: 350px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #222; }
-        #player-display { font-size: 14px; margin-bottom: 5px; color: #f1c40f; }
+        #player-names { font-size: 14px; margin-bottom: 5px; color: #f1c40f; }
         .stats-row { width: 100%; display: flex; justify-content: space-between; align-items: center; }
         #elixir-container { width: 180px; height: 20px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
         #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.3s linear; }
         #timer { color: #f1c40f; font-size: 18px; font-weight: bold; }
-        .hand { display: flex; justify-content: center; gap: 5px; padding: 10px; background: #111; flex-wrap: wrap; }
-        .card { width: 65px; height: 50px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 10px; }
+        .hand { display: flex; justify-content: center; gap: 8px; padding: 10px; background: #111; flex-wrap: wrap; }
+        .card { width: 75px; height: 55px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -33,7 +33,7 @@
 
     <div id="game-ui">
         <div id="ui-bar">
-            <div id="player-display"><span id="p1Name">...</span> VS <span id="p2Name">...</span></div>
+            <div id="player-names"><span id="p1Display"></span> vs <span id="p2Display"></span></div>
             <div class="stats-row">
                 <div id="timer">01:00</div>
                 <div id="elixir-container"><div id="elixir-fill"></div></div>
@@ -49,9 +49,9 @@
             <div id="mR" class="tower" style="bottom: 75px; left: 260px; background: #2980b9;">2500</div>
         </div>
         <div class="hand">
-            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">GIANT(5)</div>
             <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">KNIGHT(3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'archers', 3)">ARCHER(3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">GIANT(5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'archers', 3)">ARCHERS(3)</div>
             <div class="card" draggable="true" ondragstart="drag(event, 'barbs', 5)">BARBS(5)</div>
         </div>
     </div>
@@ -70,8 +70,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let myName = "", gameId = null, elixir = 5, gameActive = false, elixirMult = 1;
-        let timeLeft = 60;
-        let units = [];
+        let timeLeft = 60, units = [];
         let towers = { eKing: 4000, eL: 2500, eR: 2500, mKing: 4000, mL: 2500, mR: 2500 };
 
         window.allowDrop = (e) => e.preventDefault();
@@ -83,7 +82,7 @@
             const rect = document.getElementById('arena').getBoundingClientRect();
             const x = e.clientX - rect.left, y = e.clientY - rect.top;
             
-            // FIX: Added (cost - 0.1) to prevent 10-elixir lock bug
+            // Fixed elixir check to allow placement at exactly 10
             if (elixir >= (cost - 0.1) && gameActive && y > 260) {
                 elixir -= cost;
                 push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Date.now() + Math.random() });
@@ -94,14 +93,16 @@
             myName = document.getElementById('nameInput').value.trim() || "P" + Math.floor(Math.random()*99);
             document.getElementById('status').innerText = "SEARCHING...";
             document.getElementById('startBtn').style.display = "none";
+
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
+
             if (snap.exists() && Object.keys(snap.val())[0] !== myName) {
                 const enemy = Object.values(snap.val())[0];
                 gameId = enemy.name + "_vs_" + myName;
                 await remove(qRef);
-                // FIX: Clear moves before starting to prevent "ghost troops" bug
-                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, start: true, moves: {} });
+                // Resetting moves for a fresh game
+                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, start: true, moves: null });
                 onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
                 start();
             } else {
@@ -124,15 +125,17 @@
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             
+            // Set Names
             const names = gameId.split("_vs_");
-            document.getElementById('p1Name').innerText = names[0];
-            document.getElementById('p2Name').innerText = names[1];
+            document.getElementById('p1Display').innerText = names[0];
+            document.getElementById('p2Display').innerText = names[1];
 
             onValue(ref(db, `games/${gameId}/abandoned`), (s) => { if(s.exists()) location.reload(); });
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
 
+            // Faster Elixir Regen (0.22)
             setInterval(() => {
-                if (elixir < 10) elixir = Math.min(10, elixir + (0.25 * elixirMult));
+                if (elixir < 10) elixir = Math.min(10, elixir + (0.22 * elixirMult));
                 updateUI();
             }, 500);
 
@@ -143,8 +146,7 @@
                     document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
                 } else if (elixirMult === 1) {
                     elixirMult = 2;
-                    document.getElementById('timer').innerText = "2X!";
-                    document.getElementById('timer').style.color = "#d0f";
+                    document.getElementById('timer').innerText = "2X ELIXIR!";
                 }
             }, 1000);
             requestAnimationFrame(gameLoop);
@@ -162,10 +164,10 @@
         function spawn(m) {
             const isMine = m.sender === myName;
             const stats = {
-                giant: { hp: 500, speed: 0.3, label: 'G' },
-                knight: { hp: 200, speed: 0.5, label: 'K' },
-                archers: { hp: 80, speed: 0.6, label: 'A' },
-                barbs: { hp: 150, speed: 0.4, label: 'B' }
+                giant: { hp: 500, speed: 0.35, label: 'G' },
+                knight: { hp: 200, speed: 0.55, label: 'K' },
+                archers: { hp: 90, speed: 0.7, label: 'A' },
+                barbs: { hp: 160, speed: 0.45, label: 'B' }
             }[m.type];
 
             const u = {
@@ -203,8 +205,8 @@
                 }
 
                 if (minDist < 35) {
-                    if (target.isT) towers[target.id] -= 1.5; 
-                    else { target.hp -= 1.2; let h = document.getElementById(`h-${target.id}`); if(h) h.style.width = (target.hp/target.max*100)+'%'; }
+                    if (target.isT) towers[target.id] -= 1.8; 
+                    else { target.hp -= 1.5; let h = document.getElementById(`h-${target.id}`); if(h) h.style.width = (target.hp/target.max*100)+'%'; }
                 } else if (target) {
                     let angle = Math.atan2(target.y - u.y, target.x - u.x);
                     u.x += Math.cos(angle) * u.speed;
@@ -225,6 +227,7 @@
                 u.el.style.left = (u.x - 13) + 'px'; u.el.style.top = (u.y - 13) + 'px';
                 if (u.hp <= 0) { u.el.remove(); units.splice(idx, 1); }
             });
+
             if (towers.eKing <= 0 || towers.mKing <= 0) {
                 gameActive = false;
                 alert(towers.eKing <= 0 ? "VICTORY!" : "DEFEAT!"); location.reload();
