@@ -1,50 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web - 3 Towers</title>
+    <title>Clash Web Stable 3.0</title>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
         #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #222; }
         #game-ui { display: none; }
-        #arena { width: 350px; height: 550px; background: #4e7d34; margin: 10px auto; position: relative; border: 5px solid #fff; border-radius: 10px; }
-        /* Bridge/Path styling */
-        .lane { position: absolute; width: 60px; height: 100%; background: rgba(0,0,0,0.1); z-index: 1; }
+        #arena { width: 350px; height: 550px; background: #4e7d34; margin: 5px auto; position: relative; border: 5px solid #fff; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         
-        .tower { position: absolute; width: 40px; height: 40px; border: 2px solid #000; border-radius: 5px; z-index: 5; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; color: white; }
-        .king { width: 50px; height: 50px; border-radius: 8px; }
+        .tower { position: absolute; width: 44px; height: 44px; border: 3px solid #000; border-radius: 8px; z-index: 5; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
+        .king { width: 56px; height: 56px; }
         
-        .unit { width: 24px; height: 24px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 10px; line-height: 24px; }
+        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 10px; font-weight: bold; line-height: 26px; pointer-events: none; }
+        .hp-bar { position: absolute; top: -8px; left: 0; width: 100%; height: 4px; background: #555; border-radius: 2px; }
+        .hp-fill { height: 100%; background: #2ecc71; width: 100%; border-radius: 2px; }
         
-        #ui-bar { width: 350px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #333; }
-        #elixir-container { width: 200px; height: 15px; background: #444; border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
-        #elixir-fill { height: 100%; background: #d0f; width: 0%; transition: width 0.2s linear; }
-        .hand { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #222; }
-        .card { width: 80px; height: 60px; background: #444; border: 2px solid white; cursor: grab; font-weight: bold; font-size: 12px; border-radius: 5px; }
+        #ui-bar { width: 350px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #333; border-radius: 10px 10px 0 0; }
+        #elixir-container { width: 220px; height: 18px; background: #444; border: 2px solid #fff; border-radius: 10px; overflow: hidden; position: relative; }
+        #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.2s linear; }
+        #elixir-val { position: absolute; width: 100%; text-align: center; font-size: 12px; font-weight: bold; top: 1px; color: white; }
+        
+        .hand { display: flex; justify-content: center; gap: 12px; padding: 12px; background: #222; }
+        .card { width: 85px; height: 65px; background: #34495e; border: 2px solid white; cursor: grab; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; font-weight: bold; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <h1>CLASH WEB 3.0</h1>
-        <input type="text" id="nameInput" placeholder="Name" style="padding: 10px; font-size: 18px;">
-        <button onclick="findMatch()" style="padding: 15px 30px; margin-top: 10px; background: gold; border: none; font-weight: bold; cursor: pointer;">BATTLE</button>
-        <p id="status">Waiting for players...</p>
+        <h1 style="color: #f1c40f;">CLASH WEB PRO</h1>
+        <input type="text" id="nameInput" placeholder="Nickname" maxlength="10" style="padding: 12px; font-size: 18px; border-radius: 5px;">
+        <button onclick="findMatch()" id="matchBtn" style="padding: 15px 40px; margin-top: 15px; background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 5px;">FIND BATTLE</button>
+        <p id="status" style="margin-top: 10px; opacity: 0.7;">Ready to fight</p>
     </div>
 
     <div id="game-ui">
         <div id="ui-bar">
-            <div id="elixir-text" style="color:#d0f; font-weight:bold; font-size: 20px;">5</div>
+            <div id="elixir-val">5</div>
             <div id="elixir-container"><div id="elixir-fill"></div></div>
-            <div style="font-size: 12px;">ELIXIR</div>
+            <div style="font-size: 14px; font-weight: bold; color: #9b59b6;">ELIXIR</div>
         </div>
         <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div id="eKing" class="tower king" style="top: 10px; left: 150px; background: #c03;">100</div>
-            <div id="eL" class="tower" style="top: 60px; left: 50px; background: #c03;">60</div>
-            <div id="eR" class="tower" style="top: 60px; left: 260px; background: #c03;">60</div>
+            <div id="eKing" class="tower king" style="top: 15px; left: 147px; background: #c0392b;">3000</div>
+            <div id="eL" class="tower" style="top: 80px; left: 50px; background: #c0392b;">1800</div>
+            <div id="eR" class="tower" style="top: 80px; left: 256px; background: #c0392b;">1800</div>
 
-            <div id="mKing" class="tower king" style="bottom: 10px; left: 150px; background: #05c;">100</div>
-            <div id="mL" class="tower" style="bottom: 60px; left: 50px; background: #05c;">60</div>
-            <div id="mR" class="tower" style="bottom: 60px; left: 260px; background: #05c;">60</div>
+            <div id="mKing" class="tower king" style="bottom: 15px; left: 147px; background: #2980b9;">3000</div>
+            <div id="mL" class="tower" style="bottom: 80px; left: 50px; background: #2980b9;">1800</div>
+            <div id="mR" class="tower" style="bottom: 80px; left: 256px; background: #2980b9;">1800</div>
         </div>
         <div class="hand">
             <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">Knight (3)</div>
@@ -70,10 +72,7 @@
         const db = getDatabase(app);
         let myName = "", gameId = null, elixir = 5, gameActive = false;
         let units = [];
-        let towers = {
-            eKing: 100, eL: 60, eR: 60,
-            mKing: 100, mL: 60, mR: 60
-        };
+        let towerData = { eKing: 3000, eL: 1800, eR: 1800, mKing: 3000, mL: 1800, mR: 1800 };
 
         window.allowDrop = (e) => e.preventDefault();
         window.drag = (e, type, cost) => { e.dataTransfer.setData("type", type); e.dataTransfer.setData("cost", cost); };
@@ -83,14 +82,17 @@
             const type = e.dataTransfer.getData("type"), cost = parseInt(e.dataTransfer.getData("cost"));
             const rect = document.getElementById('arena').getBoundingClientRect();
             const x = e.clientX - rect.left, y = e.clientY - rect.top;
+            // Placement Rule: Only on your half (y > 275)
             if (elixir >= cost && gameId && gameActive && y > 275) {
                 elixir -= cost;
-                push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Math.random() });
+                push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Date.now() + Math.random() });
             }
         };
 
         window.findMatch = async () => {
-            myName = document.getElementById('nameInput').value || "Player";
+            myName = document.getElementById('nameInput').value.trim() || "Player" + Math.floor(Math.random()*99);
+            document.getElementById('matchBtn').style.display = 'none';
+            document.getElementById('status').innerText = "Searching...";
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
             if (snap.exists()) {
@@ -103,9 +105,7 @@
             } else {
                 set(ref(db, 'queue/' + myName), { name: myName });
                 onDisconnect(ref(db, 'queue/' + myName)).remove();
-                onValue(ref(db, 'games'), (s) => { 
-                    if (!gameId) for (let id in s.val()) if (id.includes(myName)) { gameId = id; start(); } 
-                });
+                onValue(ref(db, 'games'), (s) => { if (!gameId) for (let id in s.val()) if (id.includes(myName)) { gameId = id; start(); } });
             }
         };
 
@@ -114,17 +114,20 @@
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             onValue(ref(db, `games/${gameId}`), (s) => { if (s.val()?.abandoned) location.reload(); });
-            setInterval(() => { if (elixir < 10) elixir = Math.min(10, elixir + 0.1); updateUI(); }, 300);
+            setInterval(() => { if (elixir < 10) elixir = Math.min(10, elixir + 0.12); updateUI(); }, 400);
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
             requestAnimationFrame(gameLoop);
         }
 
         function updateUI() {
             document.getElementById('elixir-fill').style.width = (elixir * 10) + '%';
-            document.getElementById('elixir-text').innerText = Math.floor(elixir);
-            for (let id in towers) { 
+            document.getElementById('elixir-val').innerText = Math.floor(elixir);
+            for (let id in towerData) { 
                 const el = document.getElementById(id);
-                if (el) el.innerText = Math.floor(towers[id]); 
+                if (el) {
+                    el.innerText = Math.max(0, Math.floor(towerData[id]));
+                    if (towerData[id] <= 0) el.style.background = "#555";
+                }
             }
         }
 
@@ -132,10 +135,11 @@
             const isMine = m.sender === myName;
             const u = {
                 id: m.id, type: m.type, x: isMine ? m.x : 350 - m.x, y: isMine ? m.y : 550 - m.y,
-                hp: m.type === 'giant' ? 150 : 60, team: isMine ? 'blue' : 'red',
-                el: document.createElement('div')
+                hp: m.type === 'giant' ? 300 : 100, maxHp: m.type === 'giant' ? 300 : 100,
+                team: isMine ? 'blue' : 'red', el: document.createElement('div')
             };
-            u.el.className = 'unit'; u.el.style.backgroundColor = isMine ? '#05c' : '#c03';
+            u.el.className = 'unit'; u.el.style.backgroundColor = isMine ? '#2980b9' : '#c0392b';
+            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="fill-${u.id}"></div></div>`;
             document.getElementById('arena').appendChild(u.el);
             units.push(u);
         }
@@ -145,7 +149,7 @@
             units.forEach((u, idx) => {
                 let target = null, minDist = 1000;
                 
-                // Target enemy units first
+                // 1. UNIT SCANNING
                 units.forEach(enemy => {
                     if (enemy.team !== u.team) {
                         let d = Math.hypot(enemy.x - u.x, enemy.y - u.y);
@@ -153,45 +157,54 @@
                     }
                 });
 
-                // If no units, target towers
-                if (minDist > 100) {
+                // 2. TOWER SCANNING (If no units nearby)
+                if (minDist > 80) {
                     const tList = u.team === 'blue' ? ['eL', 'eR', 'eKing'] : ['mL', 'mR', 'mKing'];
                     tList.forEach(tId => {
-                        if (towers[tId] > 0) {
+                        if (towerData[tId] > 0) {
                             const tEl = document.getElementById(tId);
-                            const tx = tEl.offsetLeft + 20, ty = tEl.offsetTop + 20;
+                            const tx = tEl.offsetLeft + 22, ty = tEl.offsetTop + 22;
                             let d = Math.hypot(tx - u.x, ty - u.y);
                             if (d < minDist) { minDist = d; target = {x: tx, y: ty, isTower: true, id: tId}; }
                         }
                     });
                 }
 
-                if (minDist < 30) {
-                    if (target.isTower) towers[target.id] -= 0.1;
-                    else target.hp -= 0.4;
-                } else {
+                // 3. COMBAT / MOVEMENT
+                if (minDist < 32) {
+                    if (target.isTower) towerData[target.id] -= 1.5;
+                    else {
+                        target.hp -= 1.2;
+                        const fill = document.getElementById(`fill-${target.id}`);
+                        if (fill) fill.style.width = (target.hp / target.maxHp * 100) + '%';
+                    }
+                } else if (target) {
                     let angle = Math.atan2(target.y - u.y, target.x - u.x);
-                    u.x += Math.cos(angle) * (u.type === 'giant' ? 0.6 : 1.1); // SLOWER SPEED
-                    u.y += Math.sin(angle) * (u.type === 'giant' ? 0.6 : 1.1);
+                    u.x += Math.cos(angle) * (u.type === 'giant' ? 0.5 : 0.9);
+                    u.y += Math.sin(angle) * (u.type === 'giant' ? 0.5 : 0.9);
                 }
 
-                // TOWER ATTACKS UNITS (Percentage dmg)
-                const myTowers = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
-                myTowers.forEach(tId => {
-                    if (towers[tId] > 0) {
+                // 4. TOWER DEFENSE (Towers shoot units)
+                const enemyTowers = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
+                enemyTowers.forEach(tId => {
+                    if (towerData[tId] > 0) {
                         const tEl = document.getElementById(tId);
-                        const tx = tEl.offsetLeft + 20, ty = tEl.offsetTop + 20;
-                        if (Math.hypot(tx - u.x, ty - u.y) < 100) u.hp -= 0.15; // Chip damage
+                        const tx = tEl.offsetLeft + 22, ty = tEl.offsetTop + 22;
+                        if (Math.hypot(tx - u.x, ty - u.y) < 110) {
+                            u.hp -= 0.6; // Chip damage
+                            const fill = document.getElementById(`fill-${u.id}`);
+                            if (fill) fill.style.width = (u.hp / u.maxHp * 100) + '%';
+                        }
                     }
                 });
 
-                u.el.style.left = (u.x - 12) + 'px'; u.el.style.top = (u.y - 12) + 'px';
+                u.el.style.left = (u.x - 13) + 'px'; u.el.style.top = (u.y - 13) + 'px';
                 if (u.hp <= 0) { u.el.remove(); units.splice(idx, 1); }
             });
 
-            if (towers.eKing <= 0 || towers.mKing <= 0) {
+            if (towerData.eKing <= 0 || towerData.mKing <= 0) {
                 gameActive = false;
-                alert(towers.eKing <= 0 ? "3 CROWN VICTORY!" : "DEFEAT!");
+                alert(towerData.eKing <= 0 ? "3-CROWN VICTORY!" : "DEFEAT!");
                 location.reload();
             } else {
                 requestAnimationFrame(gameLoop);
