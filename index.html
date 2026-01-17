@@ -1,46 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web Pro</title>
+    <title>Clash Web Elite</title>
     <style>
-        body { font-family: sans-serif; background: #222; color: white; text-align: center; margin: 0; overflow: hidden; }
+        body { font-family: 'Arial', sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; }
         #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #game-ui { display: none; touch-action: none; }
-        #arena { width: 320px; height: 450px; background: #5D9634; margin: 10px auto; position: relative; border: 4px solid #fff; }
-        .tower { position: absolute; width: 40px; height: 40px; background: #444; color: white; font-size: 10px; font-weight: bold; border: 2px solid #000; }
-        .unit { width: 30px; height: 30px; position: absolute; border-radius: 50%; pointer-events: none; z-index: 10; }
-        .card { width: 60px; height: 70px; background: #555; border: 2px solid #fff; cursor: grab; font-size: 12px; }
-        #elixir-container { width: 300px; height: 20px; background: #000; margin: 5px auto; border-radius: 10px; border: 2px solid white; }
-        #elixir-fill { height: 100%; background: #d0f; width: 50%; transition: width 0.3s; border-radius: 8px; }
-        .controls { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #333; }
+        #arena { width: 320px; height: 480px; background: #4e7d34; margin: 5px auto; position: relative; border: 4px solid #fff; border-radius: 8px; }
+        .tower { position: absolute; width: 50px; height: 50px; border: 2px solid #000; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px; border-radius: 5px; }
+        .name-label { position: absolute; width: 100%; top: -18px; font-weight: bold; color: yellow; text-shadow: 1px 1px #000; }
+        .unit { width: 25px; height: 25px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; }
+        #elixir-bar { width: 300px; height: 15px; background: #333; margin: 10px auto; border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
+        #elixir-fill { height: 100%; background: #d0f; width: 0%; transition: width 0.3s; }
+        .hand { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #222; }
+        .card { width: 70px; height: 50px; background: #444; border: 2px solid white; cursor: grab; line-height: 50px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="setup">
         <h1>CLASH WEB</h1>
-        <input type="text" id="nameInput" placeholder="Enter Name" style="padding: 10px; margin-bottom: 10px;">
-        <button onclick="findMatch()" style="padding: 15px 30px; background: gold; font-weight: bold; cursor: pointer;">BATTLE</button>
-        <p id="status">Type name and click Battle</p>
+        <input type="text" id="nameInput" placeholder="Your Name" style="padding: 10px; font-size: 18px;">
+        <br>
+        <button onclick="findMatch()" style="padding: 15px 40px; background: #fcc200; font-weight: bold; border: none; cursor: pointer; border-radius: 5px;">BATTLE</button>
+        <p id="status">Enter name and start</p>
     </div>
 
     <div id="game-ui">
         <div id="arena" ondrop="drop(event)" ondragover="allowDrop(event)">
-            <div id="eTower" class="tower" style="top: 10px; left: 140px; background: red;">HP: 100</div>
-            <div id="myTower" class="tower" style="bottom: 10px; left: 140px; background: blue;">HP: 100</div>
+            <div id="eTower" class="tower" style="top: 10px; left: 135px; background: #d33;">
+                <span id="enemyNameDisplay" class="name-label">Enemy</span>
+                <span id="eHP">HP: 100</span>
+            </div>
+            <div id="myTower" class="tower" style="bottom: 10px; left: 135px; background: #33d;">
+                <span id="myNameDisplay" class="name-label">Me</span>
+                <span id="myHP">HP: 100</span>
+            </div>
         </div>
 
-        <div id="elixir-container"><div id="elixir-fill"></div></div>
+        <div id="elixir-bar"><div id="elixir-fill"></div></div>
 
-        <div class="controls">
-            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">Knight (3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">Giant (5)</div>
+        <div class="hand">
+            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">Knight(3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">Giant(5)</div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, onChildAdded, remove, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, onChildAdded, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJGeR1gfk3l_0g4Fjeyu2RzhUdP94U1yM",
@@ -54,11 +62,12 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let myId = "";
+        let myName = "";
+        let enemyName = "";
         let gameId = null;
         let elixir = 5;
-        let enemyHP = 100;
-        let myHP = 100;
+        let eHP = 100, mHP = 100;
+        let isHost = false;
 
         window.allowDrop = (ev) => ev.preventDefault();
         window.drag = (ev, type, cost) => {
@@ -70,31 +79,50 @@
             ev.preventDefault();
             const type = ev.dataTransfer.getData("type");
             const cost = parseInt(ev.dataTransfer.getData("cost"));
-            const rect = ev.target.getBoundingClientRect();
+            const rect = document.getElementById('arena').getBoundingClientRect();
             const x = ev.clientX - rect.left;
-
-            if (elixir >= cost) {
+            if (elixir >= cost && gameId) {
                 elixir -= cost;
-                push(ref(db, `games/${gameId}/moves`), { type, x, owner: myId });
+                push(ref(db, `games/${gameId}/moves`), { type, x, sender: myName });
             }
         };
 
         window.findMatch = async () => {
-            myId = document.getElementById('nameInput').value || "Player";
-            document.getElementById('status').innerText = "Searching...";
+            myName = document.getElementById('nameInput').value || "Guest";
+            document.getElementById('status').innerText = "Looking for 1v1...";
+            
             const qRef = ref(db, 'queue');
             const snap = await get(qRef);
 
             if (snap.exists()) {
-                const enemy = Object.keys(snap.val())[0];
-                gameId = enemy + "_" + myId;
-                await remove(ref(db, 'queue/' + enemy));
-                await set(ref(db, 'games/' + gameId), { p1: enemy, p2: myId, hp1: 100, hp2: 100 });
+                // Join existing player
+                const enemy = Object.values(snap.val())[0];
+                gameId = enemy.name + "_vs_" + myName;
+                await remove(qRef); // Close queue (only 2 players allowed)
+                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, active: true });
+                
+                // DISCONNECT LOGIC: If I leave, end game
+                onDisconnect(ref(db, `games/${gameId}`)).remove();
+                
+                isHost = false;
                 start();
             } else {
-                set(ref(db, 'queue/' + myId), true);
+                // Wait for player
+                isHost = true;
+                const myQ = ref(db, 'queue/' + myName);
+                set(myQ, { name: myName });
+                onDisconnect(myQ).remove();
+
                 onValue(ref(db, 'games'), (s) => {
-                    for(let id in s.val()) { if(id.startsWith(myId)) { gameId = id; start(); } }
+                    if (!gameId) {
+                        for (let id in s.val()) {
+                            if (id.includes(myName)) {
+                                gameId = id;
+                                onDisconnect(ref(db, `games/${gameId}`)).remove();
+                                start();
+                            }
+                        }
+                    }
                 });
             }
         };
@@ -102,44 +130,56 @@
         function start() {
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            
-            setInterval(() => { if(elixir < 10) { elixir += 0.5; updateUI(); } }, 2000);
+            document.getElementById('myNameDisplay').innerText = myName;
+
+            // Get Enemy Name
+            onValue(ref(db, `games/${gameId}`), (s) => {
+                if (!s.exists()) {
+                    alert("Opponent Disconnected! Game Over.");
+                    location.reload();
+                    return;
+                }
+                const data = s.val();
+                enemyName = (data.p1 === myName) ? data.p2 : data.p1;
+                document.getElementById('enemyNameDisplay').innerText = enemyName;
+            });
+
+            setInterval(() => { if (elixir < 10) elixir += 0.5; updateUI(); }, 1500);
 
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => {
                 const m = s.val();
-                spawn(m.type, m.x, m.owner === myId);
+                spawn(m.type, m.x, m.sender === myName);
             });
         }
 
         function updateUI() {
             document.getElementById('elixir-fill').style.width = (elixir * 10) + '%';
-            document.getElementById('eTower').innerText = "HP: " + Math.floor(enemyHP);
-            document.getElementById('myTower').innerText = "HP: " + Math.floor(myHP);
+            document.getElementById('eHP').innerText = "HP: " + Math.floor(eHP);
+            document.getElementById('myHP').innerText = "HP: " + Math.floor(mHP);
         }
 
         function spawn(type, x, isMine) {
             const u = document.createElement('div');
             u.className = 'unit';
-            u.style.backgroundColor = isMine ? 'blue' : 'red';
+            u.style.backgroundColor = isMine ? '#33d' : '#d33';
             u.style.left = x + 'px';
-            let pos = isMine ? 400 : 50;
+            let pos = isMine ? 420 : 20;
             u.style.top = pos + 'px';
             document.getElementById('arena').appendChild(u);
 
+            const speed = type === 'giant' ? 1.5 : 3;
             const timer = setInterval(() => {
-                pos += isMine ? -3 : 3;
+                pos += isMine ? -speed : speed;
                 u.style.top = pos + 'px';
                 
-                // Damage Logic
-                if (isMine && pos < 50) { 
-                    enemyHP -= (type === 'giant' ? 10 : 5); 
+                if (isMine && pos <= 30) { 
+                    eHP -= (type === 'giant' ? 15 : 7); 
                     clearInterval(timer); u.remove(); updateUI();
-                    if(enemyHP <= 0) alert("YOU WIN!");
-                }
-                if (!isMine && pos > 400) { 
-                    myHP -= 5; 
+                    if(eHP <= 0) { alert("VICTORY!"); location.reload(); }
+                } else if (!isMine && pos >= 430) { 
+                    mHP -= 7; 
                     clearInterval(timer); u.remove(); updateUI();
-                    if(myHP <= 0) alert("YOU LOSE!");
+                    if(mHP <= 0) { alert("DEFEAT!"); location.reload(); }
                 }
             }, 50);
         }
