@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clash Web - 2x Elixir Edition</title>
+    <title>Clash Web - Fixed Edition</title>
     <style>
         body { font-family: 'Arial Black', sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; overflow: hidden; user-select: none; }
         #setup { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(#444, #111); }
@@ -9,7 +9,7 @@
         #arena { width: 350px; height: 520px; background: #4e7d34; margin: 5px auto; position: relative; border: 4px solid #fff; border-radius: 10px; overflow: hidden; }
         .tower { position: absolute; width: 44px; height: 44px; border: 3px solid #000; border-radius: 8px; z-index: 5; font-size: 11px; display: flex; align-items: center; justify-content: center; }
         .king { width: 56px; height: 56px; }
-        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 9px; font-weight: bold; line-height: 26px; pointer-events: none; }
+        .unit { width: 26px; height: 26px; position: absolute; border-radius: 50%; z-index: 10; border: 2px solid white; font-size: 9px; font-weight: bold; line-height: 26px; pointer-events: none; text-transform: uppercase; }
         .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 5px; background: #333; border: 1px solid white; }
         .hp-fill { height: 100%; background: #2ecc71; width: 100%; }
         #ui-bar { width: 350px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #222; }
@@ -18,8 +18,8 @@
         #elixir-container { width: 180px; height: 20px; background: #333; border: 2px solid white; border-radius: 10px; overflow: hidden; position: relative; }
         #elixir-fill { height: 100%; background: #9b59b6; width: 0%; transition: width 0.3s linear; }
         #timer { color: #f1c40f; font-size: 18px; font-weight: bold; }
-        .hand { display: flex; justify-content: center; gap: 10px; padding: 15px; background: #111; }
-        .card { width: 85px; height: 65px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 12px; }
+        .hand { display: flex; justify-content: center; gap: 5px; padding: 10px; background: #111; flex-wrap: wrap; }
+        .card { width: 65px; height: 50px; background: #2c3e50; border: 2px solid white; border-radius: 8px; cursor: grab; display: flex; flex-direction: column; justify-content: center; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -49,8 +49,10 @@
             <div id="mR" class="tower" style="bottom: 75px; left: 260px; background: #2980b9;">2500</div>
         </div>
         <div class="hand">
-            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">KNIGHT (3)</div>
-            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">GIANT (5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'giant', 5)">GIANT(5)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'knight', 3)">KNIGHT(3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'archers', 3)">ARCHER(3)</div>
+            <div class="card" draggable="true" ondragstart="drag(event, 'barbs', 5)">BARBS(5)</div>
         </div>
     </div>
 
@@ -74,12 +76,15 @@
 
         window.allowDrop = (e) => e.preventDefault();
         window.drag = (e, type, cost) => { e.dataTransfer.setData("type", type); e.dataTransfer.setData("cost", cost); };
+        
         window.drop = (e) => {
             e.preventDefault();
             const type = e.dataTransfer.getData("type"), cost = parseInt(e.dataTransfer.getData("cost"));
             const rect = document.getElementById('arena').getBoundingClientRect();
             const x = e.clientX - rect.left, y = e.clientY - rect.top;
-            if (elixir >= cost && gameActive && y > 260) {
+            
+            // FIX: Added (cost - 0.1) to prevent 10-elixir lock bug
+            if (elixir >= (cost - 0.1) && gameActive && y > 260) {
                 elixir -= cost;
                 push(ref(db, `games/${gameId}/moves`), { type, x, y, sender: myName, id: Date.now() + Math.random() });
             }
@@ -95,7 +100,8 @@
                 const enemy = Object.values(snap.val())[0];
                 gameId = enemy.name + "_vs_" + myName;
                 await remove(qRef);
-                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, start: true });
+                // FIX: Clear moves before starting to prevent "ghost troops" bug
+                await set(ref(db, `games/${gameId}`), { p1: enemy.name, p2: myName, start: true, moves: {} });
                 onDisconnect(ref(db, `games/${gameId}`)).update({ abandoned: myName });
                 start();
             } else {
@@ -118,7 +124,6 @@
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             
-            // Set Player Names Display
             const names = gameId.split("_vs_");
             document.getElementById('p1Name').innerText = names[0];
             document.getElementById('p2Name').innerText = names[1];
@@ -126,7 +131,6 @@
             onValue(ref(db, `games/${gameId}/abandoned`), (s) => { if(s.exists()) location.reload(); });
             onChildAdded(ref(db, `games/${gameId}/moves`), (s) => spawn(s.val()));
 
-            // Elixir Timer - FASTER REGEN (0.25)
             setInterval(() => {
                 if (elixir < 10) elixir = Math.min(10, elixir + (0.25 * elixirMult));
                 updateUI();
@@ -139,7 +143,7 @@
                     document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
                 } else if (elixirMult === 1) {
                     elixirMult = 2;
-                    document.getElementById('timer').innerText = "2X ELIXIR!";
+                    document.getElementById('timer').innerText = "2X!";
                     document.getElementById('timer').style.color = "#d0f";
                 }
             }, 1000);
@@ -157,14 +161,21 @@
 
         function spawn(m) {
             const isMine = m.sender === myName;
+            const stats = {
+                giant: { hp: 500, speed: 0.3, label: 'G' },
+                knight: { hp: 200, speed: 0.5, label: 'K' },
+                archers: { hp: 80, speed: 0.6, label: 'A' },
+                barbs: { hp: 150, speed: 0.4, label: 'B' }
+            }[m.type];
+
             const u = {
                 id: m.id, type: m.type, x: isMine ? m.x : 350 - m.x, y: isMine ? m.y : 520 - m.y,
-                hp: m.type === 'giant' ? 450 : 160, max: m.type === 'giant' ? 450 : 160,
+                hp: stats.hp, max: stats.hp, speed: stats.speed,
                 team: isMine ? 'blue' : 'red', el: document.createElement('div')
             };
             u.el.className = 'unit';
             u.el.style.backgroundColor = isMine ? '#2980b9' : '#c0392b';
-            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="h-${u.id}"></div></div>`;
+            u.el.innerHTML = `<div class="hp-bar"><div class="hp-fill" id="h-${u.id}"></div></div>${stats.label}`;
             document.getElementById('arena').appendChild(u.el);
             units.push(u);
         }
@@ -193,12 +204,11 @@
 
                 if (minDist < 35) {
                     if (target.isT) towers[target.id] -= 1.5; 
-                    else { target.hp -= 1.2; document.getElementById(`h-${target.id}`).style.width = (target.hp/target.max*100)+'%'; }
+                    else { target.hp -= 1.2; let h = document.getElementById(`h-${target.id}`); if(h) h.style.width = (target.hp/target.max*100)+'%'; }
                 } else if (target) {
                     let angle = Math.atan2(target.y - u.y, target.x - u.x);
-                    // SLOWER MOVEMENT (Giant: 0.3, Knight: 0.5)
-                    u.x += Math.cos(angle) * (u.type === 'giant' ? 0.3 : 0.5);
-                    u.y += Math.sin(angle) * (u.type === 'giant' ? 0.3 : 0.5);
+                    u.x += Math.cos(angle) * u.speed;
+                    u.y += Math.sin(angle) * u.speed;
                 }
 
                 const enemySide = u.team === 'red' ? ['mKing', 'mL', 'mR'] : ['eKing', 'eL', 'eR'];
